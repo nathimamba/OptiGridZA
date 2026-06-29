@@ -1,0 +1,15 @@
+server:
+  port: 8761
+
+spring:
+  application:
+    name: eureka-server
+
+eureka:
+  client:
+    register-with-uereka: false
+    fetch-registry: false
+  server:
+    wait-time0in-ms-when-sync-empty: 0
+    com.netflix.uereka: WARN
+    com.netflix.discovery: WARN

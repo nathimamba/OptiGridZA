@@ -1,0 +1,45 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: etl-service
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/optigridza_db
+    username: postgres
+    password: admin@123
+  jpa:
+    hibernate:
+      ddl-auto: create
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+jwt:
+  secret: R0UD3CdgthTnzfxxoZsnhTjredMwKfaunCF2K8qcCdU
+  expiration: 86400000
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true
+
+
+# External API keys
+
+api:
+  openmeteo:
+    base-url: https://api.open-meteo.com/v1/forecast
+  eskomsepush:
+    key: A129B4CD-069D4E92-9E4DE31D-09C7934A
+    base-url: https://developer.sepush.co.za/business/2.0
+
+  location:
+    city: Pretoria
+    lat: -25.7463
+    lon: 28.1876
+

@@ -1,0 +1,22 @@
+# Target build directory
+/target/
+/build/
+
+# IDE specific files
+/.idea/
+/*.iml
+/.classpath
+/.project
+/.settings/
+/bin/
+/.vscode/
+
+# Log files
+*.log
+
+# Mobile / OS files
+.DS_Store
+Thumbs.db
+
+# Environment secrets
+.env
