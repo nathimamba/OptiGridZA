@@ -6,7 +6,7 @@ spring:
     name: simulation-service
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/optigrid_za
+    url:  jdbc:postgresql://localhost:5432/optigridza_db
     username: postgres
     password: admin@123
   jpa:

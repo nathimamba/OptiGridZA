@@ -1,10 +1,8 @@
 package com.optigridza.predictionservice.service;
 
 import com.optigridza.predictionservice.client.EtlServiceClient;
-import com.optigridza.predictionservice.dto.GridStatusDto;
-import com.optigridza.predictionservice.dto.RecommendationResponse;
-import com.optigridza.predictionservice.dto.TariffDto;
-import com.optigridza.predictionservice.dto.WeatherDto;
+import com.optigridza.predictionservice.client.SimulationServiceClient;
+import com.optigridza.predictionservice.dto.*;
 import com.optigridza.predictionservice.model.PredictionRecord;
 import com.optigridza.predictionservice.repository.PredictionRepository;
 import lombok.RequiredArgsConstructor;
@@ -19,10 +17,9 @@ import java.util.List;
 public class PredictionService {
     private final EtlServiceClient etlClient;
     private final PredictionRepository predictionRepository;
+    private final SimulationServiceClient simulationClient;
 
-    private static final double DEFAULT_SOC  = 60.0;
-    private static final double DEFAULT_LOAD = 3.5;
-    private static final double BATTERY_KWH  = 10.0;
+    private static final double DEFAULT_LOAD = 3.5;private static final double BATTERY_KWH  = 10.0;
 
     public RecommendationResponse recommend(String companyId) {
 
@@ -30,13 +27,17 @@ public class PredictionService {
         GridStatusDto grid    = etlClient.getGridStatus();
         TariffDto tariff  = etlClient.getCurrentTariff();
 
-        double soc  = DEFAULT_SOC;
+        // double soc  = simulationClient.getSoc(companyId).getSoc();
+        SocResponse socData = simulationClient.getSoc(companyId);
+        double soc = socData.getSoc();
+        double capacityKwh = socData.getCapacityKwh();
+
         double load = DEFAULT_LOAD;
 
         String action     = determineAction(weather, grid, tariff, soc);
         double confidence = calculateConfidence(action, grid, tariff, weather);
         String mode       = determineMode(action, grid, weather);
-        double savings    = estimateSavings(action, tariff, weather, soc);
+        double savings    = estimateSavings(action, tariff, weather, soc, capacityKwh);
         String reasoning  = buildReasoning(action, grid, tariff, weather, soc);
 
         PredictionRecord record = PredictionRecord.builder()
@@ -116,14 +117,14 @@ public class PredictionService {
     }
 
     private double estimateSavings(String action, TariffDto t,
-                                   WeatherDto w, double soc) {
+                                   WeatherDto w, double soc, double capacityKwh) {
         return switch (action) {
             case "CHARGE" ->
-                    (t.getPeakRate() - t.getRatePerKwh()) * BATTERY_KWH;
+                    (t.getPeakRate() - t.getRatePerKwh()) * capacityKwh;
             case "SOLAR_PRIORITY" ->
                     w.getSolarForecastKwh() * t.getPeakRate();
             case "DISCHARGE" ->
-                    (soc / 100.0) * BATTERY_KWH * t.getRatePerKwh();
+                    (soc / 100.0) * capacityKwh * t.getRatePerKwh();
             default -> 0.0;
         };
     }
