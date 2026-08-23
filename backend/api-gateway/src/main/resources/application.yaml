@@ -1,0 +1,50 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      server:
+        webflux:
+          discovery:
+            locator:
+              enabled: false
+          routes:
+            - id: auth-service
+              uri: lb://auth-service
+              predicates:
+                - Path=/api/v1/auth/**
+
+            - id: company-service
+              uri: lb://company-service
+              predicates:
+                - Path=/api/v1/companies/**
+
+            - id: etl-service
+              uri: lb://etl-service
+              predicates:
+                - Path=/api/v1/etl/**
+
+            - id: prediction-service
+              uri: lb://prediction-service
+              predicates:
+                - Path=/api/v1/prediction/**
+
+            - id: simulation-service
+              uri: lb://simulation-service
+              predicates:
+                - Path=/api/v1/simulation/**
+
+            - id: notification-service
+              uri: lb://notification-service
+              predicates:
+                - Path=/api/v1/notifications/**
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true
