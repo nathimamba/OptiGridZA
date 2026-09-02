@@ -1,0 +1,146 @@
+version: '3.8'
+
+services:
+
+  postgres:
+    image: postgres:16
+    container_name: postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: optigridza_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: admin@123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - optigrid-network
+
+  eureka-service:
+    build: ./eureka-service
+    container_name: eureka-service
+    restart: unless-stopped
+    ports:
+      - "8761:8761"
+    networks:
+      - optigrid-network
+
+  auth-service:
+    build: ./auth-service
+    container_name: auth-service
+    restart: unless-stopped
+    depends_on:
+      - eureka-service
+      - postgres
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/optigridza_db
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-server:8761/eureka/
+    ports:
+      - "8081:8081"
+    networks:
+      - optigrid-network
+
+  company-service:
+    build: ./company-service
+    container_name: company-service
+    restart: unless-stopped
+    depends_on:
+      - eureka-service
+      - postgres
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/optigridza_db
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-server:8761/eureka/
+    ports:
+      - "8082:8082"
+    networks:
+      - optigrid-network
+
+  etl-service:
+    build: ./etl-service
+    container_name: etl-service
+    restart: unless-stopped
+    depends_on:
+      - eureka-service
+      - postgres
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/optigridza_db
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-server:8761/eureka/
+    ports:
+      - "8083:8083"
+    networks:
+      - optigrid-network
+
+  prediction-service:
+    build: ./prediction-service
+    container_name: prediction-service
+    restart: unless-stopped
+    depends_on:
+      - eureka-service
+      - postgres
+      - etl-service
+      - simulation-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/optigridza_db
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-server:8761/eureka/
+    ports:
+      - "8084:8084"
+    networks:
+      - optigrid-network
+
+  simulation-service:
+    build: ./simulation-service
+    container_name: simulation-service
+    restart: unless-stopped
+    depends_on:
+      - eureka-service
+      - postgres
+      - notification-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/optigridza_db
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-server:8761/eureka/
+    ports:
+      - "8085:8085"
+    networks:
+      - optigrid-network
+
+  notification-service:
+    build: ./notification-service
+    container_name: notification-service
+    restart: unless-stopped
+    depends_on:
+      - eureka-service
+      - postgres
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/optigridza_db
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-server:8761/eureka/
+    ports:
+      - "8086:8086"
+    networks:
+      - optigrid-network
+
+  api-gateway:
+    build: ./api-gateway
+    container_name: api-gateway
+    restart: unless-stopped
+    depends_on:
+      - eureka-service
+      - auth-service
+      - company-service
+      - etl-service
+      - prediction-service
+      - simulation-service
+      - notification-service
+    environment:
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-server:8761/eureka/
+    ports:
+      - "8080:8080"
+    networks:
+      - optigrid-network
+
+networks:
+  optigrid-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
