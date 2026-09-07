@@ -35,7 +35,7 @@ services:
       - postgres
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/optigridza_db
-      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-service:8761/eureka/
     ports:
       - "8081:8081"
     networks:
@@ -50,7 +50,7 @@ services:
       - postgres
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/optigridza_db
-      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-service:8761/eureka/
     ports:
       - "8082:8082"
     networks:
@@ -65,7 +65,7 @@ services:
       - postgres
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/optigridza_db
-      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-service:8761/eureka/
     ports:
       - "8083:8083"
     networks:
@@ -82,7 +82,7 @@ services:
       - simulation-service
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/optigridza_db
-      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-service:8761/eureka/
     ports:
       - "8084:8084"
     networks:
@@ -98,7 +98,7 @@ services:
       - notification-service
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/optigridza_db
-      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-service:8761/eureka/
     ports:
       - "8085:8085"
     networks:
@@ -113,7 +113,7 @@ services:
       - postgres
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/optigridza_db
-      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-service:8761/eureka/
     ports:
       - "8086:8086"
     networks:
@@ -132,7 +132,7 @@ services:
       - simulation-service
       - notification-service
     environment:
-      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-service:8761/eureka/
     ports:
       - "8080:8080"
     networks:
