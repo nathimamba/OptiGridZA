@@ -16,15 +16,15 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "company_users",
         uniqueConstraints = @UniqueConstraint(
-                columnNames = {"user_email", "company_id"}
+                columnNames = {"email", "company_id"}
         ))
 public class CompanyUser {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
-    @Column(name = "user_email", nullable = false)
-    private String userEmail;
+    @Column(name = "email", nullable = false)
+    private String email;
 
     @Column(name = "company_id", nullable = false)
     private String companyId;

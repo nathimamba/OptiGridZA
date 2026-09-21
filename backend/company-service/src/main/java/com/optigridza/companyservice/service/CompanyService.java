@@ -1,5 +1,6 @@
 package com.optigridza.companyservice.service;
 
+import com.optigridza.companyservice.client.AuthServiceClient;
 import com.optigridza.companyservice.dto.AssignUserRequest;
 import com.optigridza.companyservice.dto.CompanyResponse;
 import com.optigridza.companyservice.dto.CompanyUserResponse;
@@ -13,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -20,6 +22,7 @@ import java.util.List;
 public class CompanyService {
     private final CompanyRepository companyRepository;
     private final CompanyUserRepository companyUserRepository;
+    private final AuthServiceClient authServiceClient;
 
     public CompanyResponse createCompany(CreateCompanyRequest request) {
 
@@ -75,10 +78,10 @@ public class CompanyService {
                 .orElseThrow(() -> new RuntimeException(
                         "Company not found: " + companyId));
 
-        if (companyUserRepository.existsByUserEmailAndCompanyId(
-                request.getUserEmail(), companyId)) {
+        if (companyUserRepository.existsByEmailAndCompanyId(
+                request.getEmail(), companyId)) {
             throw new RuntimeException(
-                    request.getUserEmail() + " already assigned to this company");
+                    request.getEmail() + " already assigned to this company");
         }
 
         if ("SYSTEM_ADMIN".equals(request.getRole())) {
@@ -87,15 +90,19 @@ public class CompanyService {
         }
 
         CompanyUser cu = CompanyUser.builder()
-                .userEmail(request.getUserEmail())
+                .email(request.getEmail())
                 .companyId(companyId)
                 .role(request.getRole())
                 .active(true)
                 .build();
 
         CompanyUser saved = companyUserRepository.save(cu);
+
+        // Sync companyId back into auth-service so the JWT carries it on next login
+        authServiceClient.updateUserCompany(request.getEmail(), Map.of("companyId", companyId));
+
         log.info("User {} → company {} as {}",
-                saved.getUserEmail(), companyId, saved.getRole());
+                saved.getEmail(), companyId, saved.getRole());
 
         return toUserResponse(saved, company.getName(),
                 "User assigned successfully");
@@ -119,7 +126,7 @@ public class CompanyService {
                 .orElseThrow(() -> new RuntimeException(
                         "Company not found: " + companyId));
         CompanyUser cu = companyUserRepository
-                .findByUserEmailAndCompanyId(userEmail, companyId)
+                .findByEmailAndCompanyId(userEmail, companyId)
                 .orElseThrow(() -> new RuntimeException(
                         userEmail + " not found in this company"));
         cu.setActive(false);
@@ -146,7 +153,7 @@ public class CompanyService {
             CompanyUser cu, String companyName, String message) {
         return CompanyUserResponse.builder()
                 .id(cu.getId())
-                .userEmail(cu.getUserEmail())
+                .email(cu.getEmail())
                 .companyId(cu.getCompanyId())
                 .companyName(companyName)
                 .role(cu.getRole())

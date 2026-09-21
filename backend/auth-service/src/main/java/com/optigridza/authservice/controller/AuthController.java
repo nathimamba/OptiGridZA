@@ -7,10 +7,9 @@ import com.optigridza.authservice.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -26,5 +25,12 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request){
         return ResponseEntity.ok(authService.login(request));
+    }
+
+    @PatchMapping("/users/{email}/company")
+    public ResponseEntity<Void> updateUserCompany(@PathVariable String email,
+                                                  @RequestBody Map<String, String> body){
+        authService.updateUserCompany(email, body.get("CompanyId"));
+        return ResponseEntity.ok().build();
     }
 }

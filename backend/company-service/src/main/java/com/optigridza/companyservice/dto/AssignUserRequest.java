@@ -8,7 +8,7 @@ import lombok.Data;
 public class AssignUserRequest {
     @Email(message = "Must be a valid email")
     @NotBlank(message = "User email is required")
-    private String userEmail;
+    private String email;
 
     @NotBlank(message = "Role is required")
     private String role;

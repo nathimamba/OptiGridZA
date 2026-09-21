@@ -75,4 +75,11 @@ public class AuthService {
                 .message("Login successful")
                 .build();
     }
+
+    public void updateUserCompany(String email, String companyId){
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found" + email));
+        user.setCompanyId(companyId);
+        userRepository.save(user);
+    }
 }

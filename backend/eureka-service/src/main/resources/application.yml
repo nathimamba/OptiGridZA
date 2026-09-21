@@ -10,6 +10,7 @@ eureka:
     register-with-uereka: false
     fetch-registry: false
   server:
+    enable-self-preservation: false
     wait-time0in-ms-when-sync-empty: 0
     com.netflix.uereka: WARN
     com.netflix.discovery: WARN
