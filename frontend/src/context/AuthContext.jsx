@@ -5,22 +5,19 @@ const AuthContext = createContext(null)
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
+  const [ready, setReady] = useState(false)
 
   useEffect(() => {
     const token = localStorage.getItem('token')
     if (token) {
       try {
         const decoded = jwtDecode(token)
-        setUser({
-          email: decoded.sub,
-          role: decoded.role,
-          companyId: decoded.companyId,
-          token,
-        })
+        setUser({ email: decoded.sub, role: decoded.role, companyId: decoded.companyId, token })
       } catch {
         localStorage.removeItem('token')
       }
     }
+    setReady(true)
   }, [])
 
   const logout = () => {
@@ -29,7 +26,7 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, setUser, logout }}>
+    <AuthContext.Provider value={{ user, setUser, logout, ready }}>
       {children}
     </AuthContext.Provider>
   )
