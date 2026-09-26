@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom'
 const GATEWAY_URL = 'http://localhost:8080'
 
 export default function Register() {
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [role, setRole] = useState('ENERGY_MANAGER')
@@ -19,7 +21,7 @@ export default function Register() {
       const res = await fetch(`${GATEWAY_URL}/api/v1/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, role }),
+        body: JSON.stringify({ firstName, lastName, email, password, role }),
       })
       if (!res.ok) throw new Error('Registration failed — email may already be in use')
       navigate('/')
@@ -36,6 +38,19 @@ export default function Register() {
         <div className="card-body">
           <h2 className="font-display text-2xl font-semibold">Create account</h2>
           <form onSubmit={handleSubmit} className="space-y-3 mt-2">
+            <div className="grid grid-cols-2 gap-3">
+              <label className="form-control">
+                <span className="label-text text-xs mb-1">First name</span>
+                <input className="input input-bordered w-full" value={firstName}
+                  onChange={e => setFirstName(e.target.value)} required />
+              </label>
+              <label className="form-control">
+                <span className="label-text text-xs mb-1">Last name</span>
+                <input className="input input-bordered w-full" value={lastName}
+                  onChange={e => setLastName(e.target.value)} required />
+              </label>
+            </div>
+
             <label className="form-control">
               <span className="label-text text-xs mb-1">Email</span>
               <input type="email" className="input input-bordered w-full" value={email}

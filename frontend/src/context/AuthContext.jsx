@@ -12,7 +12,14 @@ export function AuthProvider({ children }) {
     if (token) {
       try {
         const decoded = jwtDecode(token)
-        setUser({ email: decoded.sub, role: decoded.role, companyId: decoded.companyId, token })
+        setUser({
+          email: decoded.sub,
+          role: decoded.role,
+          companyId: decoded.companyId,
+          firstName: decoded.firstName,
+          lastName: decoded.lastName,
+          token,
+        })
       } catch {
         localStorage.removeItem('token')
       }

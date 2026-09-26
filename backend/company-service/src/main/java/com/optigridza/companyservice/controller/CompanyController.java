@@ -11,6 +11,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/companies")
@@ -38,6 +39,12 @@ public class CompanyController {
     public ResponseEntity<CompanyResponse> getCompany(
             @PathVariable String id) {
         return ResponseEntity.ok(companyService.getCompany(id));
+    }
+
+    @GetMapping("/{id}/location")
+    public ResponseEntity<Map<String, Double>> getCompanyLocation(
+            @PathVariable String id) {
+        return ResponseEntity.ok(companyService.getCompanyLocation(id));
     }
 
     @PutMapping("/{id}/deactivate")

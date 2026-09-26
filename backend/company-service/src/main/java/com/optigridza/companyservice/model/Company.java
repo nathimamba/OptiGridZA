@@ -16,31 +16,33 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "companies")
 public class Company {
+
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
-    @Column(unique = true, nullable = false)
+    @Column(nullable = false, unique = true)
     private String name;
 
-    @Column
     private String address;
 
-    @Column(name="industry_type")
+    @Column(name = "industry_type")
     private String industryType;
 
-    @Column(name="contact_email")
+    @Column(name = "contact_email")
     private String contactEmail;
 
-    @Column(name="contact_phone")
+    @Column(name = "contact_phone")
     private String contactPhone;
 
+    private Double latitude;
+
+    private Double longitude;
+
     @Column(nullable = false)
-    private boolean active = true;
+    private boolean active;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
-
-
 }

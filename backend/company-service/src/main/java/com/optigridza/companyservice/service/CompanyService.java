@@ -37,6 +37,8 @@ public class CompanyService {
                 .industryType(request.getIndustryType())
                 .contactEmail(request.getContactEmail())
                 .contactPhone(request.getContactPhone())
+                .latitude(request.getLatitude())
+                .longitude(request.getLongitude())
                 .active(true)
                 .build();
 
@@ -58,6 +60,18 @@ public class CompanyService {
                 .orElseThrow(() -> new RuntimeException(
                         "Company not found: " + companyId));
         return toCompanyResponse(company, null);
+    }
+
+    public Map<String, Double> getCompanyLocation(String companyId) {
+        Company company = companyRepository
+                .findByIdAndActiveTrue(companyId)
+                .orElseThrow(() -> new RuntimeException(
+                        "Company not found: " + companyId));
+
+        double lat = company.getLatitude() != null ? company.getLatitude() : -25.7479;
+        double lon = company.getLongitude() != null ? company.getLongitude() : 28.2293;
+
+        return Map.of("latitude", lat, "longitude", lon);
     }
 
     public CompanyResponse deactivateCompany(String companyId) {
@@ -98,7 +112,6 @@ public class CompanyService {
 
         CompanyUser saved = companyUserRepository.save(cu);
 
-        // Sync companyId back into auth-service so the JWT carries it on next login
         authServiceClient.updateUserCompany(request.getEmail(), Map.of("companyId", companyId));
 
         log.info("User {} → company {} as {}",
@@ -143,6 +156,8 @@ public class CompanyService {
                 .industryType(c.getIndustryType())
                 .contactEmail(c.getContactEmail())
                 .contactPhone(c.getContactPhone())
+                .latitude(c.getLatitude())
+                .longitude(c.getLongitude())
                 .active(c.isActive())
                 .createdAt(c.getCreatedAt())
                 .message(message)

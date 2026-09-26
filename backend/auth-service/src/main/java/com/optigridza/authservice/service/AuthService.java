@@ -3,6 +3,7 @@ package com.optigridza.authservice.service;
 import com.optigridza.authservice.dto.AuthResponse;
 import com.optigridza.authservice.dto.LoginRequest;
 import com.optigridza.authservice.dto.RegisterRequest;
+import com.optigridza.authservice.enums.Role;
 import com.optigridza.authservice.model.User;
 import com.optigridza.authservice.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +27,8 @@ public class AuthService {
         }
 
         User user = User.builder()
+                .firstName(request.getFirstName())
+                .lastName(request.getLastName())
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .role(request.getRole())
@@ -36,19 +39,25 @@ public class AuthService {
         userRepository.save(user);
 
         String token = jwtService.generatedToken(
-          user.getEmail(),
-          user.getRole().name(),
-          user.getCompanyId()
+                user.getEmail(),
+                user.getRole().name(),
+                user.getCompanyId(),
+                user.getFirstName(),
+                user.getLastName()
+
         );
 
         return AuthResponse.builder()
                 .token(token)
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
                 .email(user.getEmail())
                 .role(user.getRole().name())
                 .companyId(user.getCompanyId())
                 .message("Registration successful")
                 .build();
     }
+
     public AuthResponse login(LoginRequest request) {
 
         authenticationManager.authenticate(
@@ -64,11 +73,15 @@ public class AuthService {
         String token = jwtService.generatedToken(
                 user.getEmail(),
                 user.getRole().name(),
-                user.getCompanyId()
+                user.getCompanyId(),
+                user.getFirstName(),
+                user.getLastName()
         );
 
         return AuthResponse.builder()
                 .token(token)
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
                 .email(user.getEmail())
                 .role(user.getRole().name())
                 .companyId(user.getCompanyId())
@@ -76,9 +89,9 @@ public class AuthService {
                 .build();
     }
 
-    public void updateUserCompany(String email, String companyId){
+    public void updateUserCompany(String email, String companyId) {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found" + email));
+                .orElseThrow(() -> new RuntimeException("User not found: " + email));
         user.setCompanyId(companyId);
         userRepository.save(user);
     }

@@ -3,12 +3,84 @@ import { Line } from 'react-chartjs-2'
 import { Chart as ChartJS, LineElement, PointElement, LinearScale, CategoryScale, Tooltip, Filler } from 'chart.js'
 import { useAuth } from '../context/AuthContext'
 import { apiFetch } from '../services/api'
+import { toDisplayName } from '../utils/displayName'
 
 ChartJS.register(LineElement, PointElement, LinearScale, CategoryScale, Tooltip, Filler)
 
 const healthBadge = { GOOD: 'badge-success', WARNING: 'badge-warning', CRITICAL: 'badge-error' }
 
+function AdminOverview() {
+  const [companies, setCompanies] = useState([])
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    apiFetch('/api/v1/companies')
+      .then(setCompanies)
+      .catch(() => setError('Could not load companies.'))
+  }, [])
+
+  const activeCount = companies.filter(c => c.active).length
+
+  return (
+    <div>
+      <h1 className="font-display text-2xl font-bold mb-1">Admin Overview</h1>
+      <p className="text-sm text-base-content/60 mb-6">
+        System-wide summary — no single company is selected for an administrator
+      </p>
+
+      {error && <div className="alert alert-error mb-6">{error}</div>}
+
+      <div className="stats shadow w-full mb-6 grid grid-cols-2 bg-base-100">
+        <div className="stat">
+          <div className="stat-title">Total companies</div>
+          <div className="stat-value text-primary">{companies.length}</div>
+        </div>
+        <div className="stat">
+          <div className="stat-title">Active companies</div>
+          <div className="stat-value text-success">{activeCount}</div>
+        </div>
+      </div>
+
+      <div className="card bg-base-100 shadow border border-base-300">
+        <div className="card-body">
+          <h2 className="card-title font-display">Recent companies</h2>
+          <table className="table">
+            <thead><tr><th>Name</th><th>Industry</th><th>Status</th></tr></thead>
+            <tbody>
+              {companies.length === 0 && (
+                <tr><td colSpan={3} className="text-center text-base-content/60 py-6">No companies yet.</td></tr>
+              )}
+              {companies.slice(0, 5).map(c => (
+                <tr key={c.id}>
+                  <td>{c.name}</td>
+                  <td>{c.industryType || '—'}</td>
+                  <td>
+                    <span className={`badge ${c.active ? 'badge-success' : 'badge-ghost'}`}>
+                      {c.active ? 'Active' : 'Inactive'}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <a href="/companies" className="link link-primary text-sm mt-2">Manage all companies →</a>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function Dashboard() {
+  const { user } = useAuth()
+
+  if (user?.role === 'SYSTEM_ADMIN') {
+    return <AdminOverview />
+  }
+
+  return <CompanyDashboard />
+}
+
+function CompanyDashboard() {
   const { user } = useAuth()
   const [recommendation, setRecommendation] = useState(null)
   const [battery, setBattery] = useState(null)
@@ -17,7 +89,6 @@ export default function Dashboard() {
   const [trend, setTrend] = useState([])
   const intervalRef = useRef(null)
 
-  // Simulation form state
   const [mode, setMode] = useState('HYBRID')
   const [action, setAction] = useState('CHARGE')
   const [kwh, setKwh] = useState(5)
@@ -91,7 +162,7 @@ export default function Dashboard() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="font-display text-2xl font-bold">Dashboard</h1>
-          <p className="text-sm text-base-content/60">Live view for {user?.email}</p>
+          <p className="text-sm text-base-content/60">Live view for {toDisplayName(user?.email)}</p>
         </div>
         <button className="btn btn-sm btn-outline" onClick={load}>Refresh</button>
       </div>
@@ -110,7 +181,7 @@ export default function Dashboard() {
         <div className="stat">
           <div className="stat-title">Solar Forecast</div>
           <div className="stat-value text-secondary">
-            {recommendation ? `${recommendation.solarForecastKwh}kWh` : '—'}
+            {recommendation ? `${recommendation.solarForecastKwh.toFixed(1)}kWh` : '—'}
           </div>
         </div>
         <div className="stat">

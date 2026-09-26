@@ -9,8 +9,8 @@ import java.time.LocalDateTime;
 
 @Data
 @Builder
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
 public class CompanyResponse {
     private String id;
     private String name;
@@ -18,6 +18,8 @@ public class CompanyResponse {
     private String industryType;
     private String contactEmail;
     private String contactPhone;
+    private Double latitude;
+    private Double longitude;
     private boolean active;
     private LocalDateTime createdAt;
     private String message;

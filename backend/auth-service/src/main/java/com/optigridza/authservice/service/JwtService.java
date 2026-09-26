@@ -19,11 +19,13 @@ public class JwtService {
     @Value("${jwt.expiration}")
     private long jwtExpiration;
 
-    public String generatedToken(String email, String role, String companyId){
+    public String generatedToken(String email, String role, String companyId, String firstName, String lastName){
         return Jwts.builder()
                 .subject(email)
                 .claim("role",role)
                 .claim("companyId", companyId)
+                .claim("firstName", firstName)
+                .claim("lastName", lastName)
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + jwtExpiration))
                 .signWith(getSigningKey())
