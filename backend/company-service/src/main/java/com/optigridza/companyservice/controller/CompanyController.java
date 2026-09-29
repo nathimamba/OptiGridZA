@@ -35,7 +35,7 @@ public class CompanyController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN','ENERGY_MANAGER','BUSINESS_OWNER')")
+    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN','ENERGY_MANAGER','BUSINESS_OWNER','TECHNICIAN','VIEWER')")
     public ResponseEntity<CompanyResponse> getCompany(
             @PathVariable String id) {
         return ResponseEntity.ok(companyService.getCompany(id));

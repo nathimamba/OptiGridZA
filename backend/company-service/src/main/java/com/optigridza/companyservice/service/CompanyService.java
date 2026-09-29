@@ -1,6 +1,7 @@
 package com.optigridza.companyservice.service;
 
 import com.optigridza.companyservice.client.AuthServiceClient;
+import com.optigridza.companyservice.client.SimulationServiceClient;
 import com.optigridza.companyservice.dto.AssignUserRequest;
 import com.optigridza.companyservice.dto.CompanyResponse;
 import com.optigridza.companyservice.dto.CompanyUserResponse;
@@ -23,6 +24,7 @@ public class CompanyService {
     private final CompanyRepository companyRepository;
     private final CompanyUserRepository companyUserRepository;
     private final AuthServiceClient authServiceClient;
+    private final SimulationServiceClient simulationServiceClient;
 
     public CompanyResponse createCompany(CreateCompanyRequest request) {
 
@@ -43,6 +45,13 @@ public class CompanyService {
                 .build();
 
         Company saved = companyRepository.save(company);
+
+        try {
+            simulationServiceClient.initBattery(Map.of("companyId", saved.getId()));
+        } catch (Exception e) {
+            log.warn("Could not auto-provision battery for company {}: {}", saved.getId(), e.getMessage());
+        }
+
         log.info("Company created: {} id: {}", saved.getName(), saved.getId());
         return toCompanyResponse(saved, "Company created successfully");
     }

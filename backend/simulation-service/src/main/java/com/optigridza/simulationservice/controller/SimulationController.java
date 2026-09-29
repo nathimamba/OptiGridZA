@@ -11,11 +11,16 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
+import java.util.Map;
+import java.util.UUID;
+
 @RestController
 @RequestMapping("/api/v1/simulation")
 @RequiredArgsConstructor
 public class SimulationController {
-    private final VirtualBatteryRepository  virtualBatteryRepository;
+
+    private final VirtualBatteryRepository virtualBatteryRepository;
     private final BatterySimulationService simulationService;
 
     @GetMapping("/battery/{companyId}/soc")
@@ -28,6 +33,27 @@ public class SimulationController {
                 .build());
     }
 
+    @PostMapping("/battery/init")
+    public ResponseEntity<VirtualBattery> initBattery(@RequestBody Map<String, String> body) {
+        String companyId = body.get("companyId");
+
+        return virtualBatteryRepository.findByCompanyId(companyId)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> {
+                    VirtualBattery battery = VirtualBattery.builder()
+                            .id(UUID.randomUUID().toString())
+                            .companyId(companyId)
+                            .capacityKwh(10.0)
+                            .currentSoc(50.0)
+                            .cycleCount(0)
+                            .efficiencyPct(100.0)
+                            .mode("HYBRID")
+                            .lastUpdated(LocalDateTime.now())
+                            .build();
+                    return ResponseEntity.ok(virtualBatteryRepository.save(battery));
+                });
+    }
+
     @PostMapping("/run")
     @PreAuthorize("hasAnyRole('ENERGY_MANAGER','SYSTEM_ADMIN')")
     public ResponseEntity<VirtualBattery> runSimulation(@RequestBody SimulationRunRequest request) {
@@ -38,7 +64,7 @@ public class SimulationController {
     }
 
     @GetMapping("/battery/health/{companyId}")
-    @PreAuthorize("hasAnyRole('TECHNICIAN','ENERGY_MANAGER','SYSTEM_ADMIN')")
+    @PreAuthorize("hasAnyRole('TECHNICIAN','ENERGY_MANAGER','SYSTEM_ADMIN','BUSINESS_OWNER','VIEWER')")
     public ResponseEntity<BatteryHealthResponse> getHealth(@PathVariable String companyId) {
         VirtualBattery battery = virtualBatteryRepository.findByCompanyId(companyId)
                 .orElseThrow(() -> new RuntimeException("No battery found for company " + companyId));
