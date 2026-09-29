@@ -84,6 +84,7 @@ function CompanyDashboard() {
   const { user } = useAuth()
   const [recommendation, setRecommendation] = useState(null)
   const [battery, setBattery] = useState(null)
+  const [company, setCompany] = useState(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
   const [trend, setTrend] = useState([])
@@ -98,12 +99,14 @@ function CompanyDashboard() {
 
   const load = async () => {
     try {
-      const [rec, health] = await Promise.all([
+      const [rec, health, comp] = await Promise.all([
         apiFetch(`/api/v1/prediction/recommend/${user.companyId}`),
         apiFetch(`/api/v1/simulation/battery/health/${user.companyId}`),
+        apiFetch(`/api/v1/companies/${user.companyId}`),
       ])
       setRecommendation(rec)
       setBattery(health)
+      setCompany(comp)
       setTrend(prev => [...prev, {
         t: new Date().toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' }),
         soc: health.soc,
@@ -161,8 +164,12 @@ function CompanyDashboard() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="font-display text-2xl font-bold">Dashboard</h1>
-          <p className="text-sm text-base-content/60">Live view for {toDisplayName(user?.email)}</p>
+          <h1 className="font-display text-2xl font-bold">
+            {company ? company.name : 'Dashboard'}
+          </h1>
+          <p className="text-sm text-base-content/60">
+            {company?.address ? `${company.address} · ` : ''}{toDisplayName(user?.email)}
+          </p>
         </div>
         <button className="btn btn-sm btn-outline" onClick={load}>Refresh</button>
       </div>
@@ -271,7 +278,7 @@ function CompanyDashboard() {
                       value={mode}
                       onChange={e => setMode(e.target.value)}
                     >
-                      <option value="GRID">Grid-connected</option>
+                      <option value="GRID">Electricity (Grid-connected)</option>
                       <option value="HYBRID">Hybrid</option>
                       <option value="OFF_GRID">Off-grid</option>
                     </select>
