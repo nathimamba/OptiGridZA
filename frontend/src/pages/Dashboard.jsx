@@ -1,7 +1,7 @@
-import { useEffect, useState, useRef } from 'react'
+import { useCallback, useEffect, useState, useRef } from 'react'
 import { Line } from 'react-chartjs-2'
 import { Chart as ChartJS, LineElement, PointElement, LinearScale, CategoryScale, Tooltip, Filler } from 'chart.js'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../context/authContextValue'
 import { apiFetch } from '../services/api'
 import { toDisplayName } from '../utils/displayName'
 
@@ -97,7 +97,7 @@ function CompanyDashboard() {
   const [simError, setSimError] = useState('')
   const [simSuccess, setSimSuccess] = useState('')
 
-  const load = async () => {
+  const load = useCallback(async () => {
     try {
       const [rec, health, comp] = await Promise.all([
         apiFetch(`/api/v1/prediction/recommend/${user.companyId}`),
@@ -112,19 +112,22 @@ function CompanyDashboard() {
         soc: health.soc,
       }].slice(-20))
       setError('')
-    } catch (err) {
+    } catch {
       setError('Could not load dashboard data — check that a company and battery exist.')
     } finally {
       setLoading(false)
     }
-  }
+  }, [user.companyId])
 
   useEffect(() => {
     if (!user?.companyId) return
-    load()
+    const initialLoad = setTimeout(load, 0)
     intervalRef.current = setInterval(load, 30000)
-    return () => clearInterval(intervalRef.current)
-  }, [user])
+    return () => {
+      clearTimeout(initialLoad)
+      clearInterval(intervalRef.current)
+    }
+  }, [load, user?.companyId])
 
   const runSimulation = async (e) => {
     e.preventDefault()
@@ -138,7 +141,7 @@ function CompanyDashboard() {
       })
       await load()
       setSimSuccess('Simulation applied — battery updated.')
-    } catch (err) {
+    } catch {
       setSimError('Simulation failed — check the values and try again.')
     } finally {
       setSimLoading(false)
@@ -179,7 +182,7 @@ function CompanyDashboard() {
       <div className="stats shadow w-full mb-6 grid grid-cols-2 lg:grid-cols-4 bg-base-100">
         <div className="stat">
           <div className="stat-title">Battery SOC</div>
-          <div className="stat-value text-primary">{battery ? `${battery.soc}%` : '—'}</div>
+          <div className="stat-value text-primary">{battery ? `${Number(battery.soc).toFixed(1)}%` : '—'}</div>
         </div>
         <div className="stat">
           <div className="stat-title">Load-Shedding Stage</div>
@@ -327,7 +330,7 @@ function CompanyDashboard() {
               role="progressbar"
             >
               <span className="font-display text-3xl font-bold">
-                {battery ? `${battery.soc}%` : '—'}
+                {battery ? `${Number(battery.soc).toFixed(1)}%` : '—'}
               </span>
             </div>
             {battery && (

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../context/authContextValue'
 import { apiFetch } from '../services/api'
 
 const sevBadge = { INFO: 'badge-info', WARNING: 'badge-warning', CRITICAL: 'badge-error' }

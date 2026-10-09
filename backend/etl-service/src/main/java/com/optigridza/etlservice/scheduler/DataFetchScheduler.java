@@ -7,12 +7,19 @@ import com.optigridza.etlservice.service.WeatherService;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
+@ConditionalOnProperty(
+        prefix = "app.data-fetch",
+        name = "enabled",
+        havingValue = "true",
+        matchIfMissing = true
+)
 public class DataFetchScheduler {
     private final WeatherService weatherService;
     private final EskomService eskomService;

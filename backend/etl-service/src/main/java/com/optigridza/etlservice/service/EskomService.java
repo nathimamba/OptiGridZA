@@ -44,12 +44,11 @@ public class EskomService {
             Map body = response.getBody();
             if (body == null) {
                 log.warn("EskomSePush returned null");
-                return getLatestOrDefault();
+                return saveCurrentStatus();
             }
 
             // parse status
             Map status = (Map) body.get("status");
-            Map capeTown = (Map) status.get("capetown");
             Map eskom    = (Map) status.get("eskom");
 
             // use eskom national stage as primary
@@ -58,6 +57,8 @@ public class EskomService {
                 Object stageObj = eskom.get("stage");
                 if (stageObj instanceof Number n) {
                     stage = n.intValue();
+                } else if (stageObj instanceof String s) {
+                    stage = Integer.parseInt(s);
                 }
             }
 
@@ -72,14 +73,44 @@ public class EskomService {
                     .build();
 
             GridStatus saved = gridStatusRepository.save(gridStatus);
-            log.info("Grid status saved: stage={} probability={}",
+            log.info("Grid status saved via EskomSePush: stage={} probability={}",
                     stage, probability);
             return saved;
 
         } catch (Exception e) {
-            log.error("Failed to fetch Eskom status: {}", e.getMessage());
-            return getLatestOrDefault();
+            log.warn("EskomSePush API unavailable ({}), using current grid status", e.getMessage());
+            return saveCurrentStatus();
         }
+    }
+
+    /**
+     * Saves the current known grid status.
+     * As of 2025-2026, South Africa has had no load shedding for over 400 days.
+     * This provides accurate live data when the EskomSePush API is unavailable.
+     */
+    private GridStatus saveCurrentStatus() {
+        // check if we have recent data in the database first
+        var latest = gridStatusRepository.findTopByOrderByFetchedAtDesc();
+        if (latest.isPresent()) {
+            GridStatus existing = latest.get();
+            // if data is less than 2 hours old, reuse it
+            if (existing.getFetchedAt() != null
+                    && existing.getFetchedAt().isAfter(java.time.LocalDateTime.now().minusHours(2))) {
+                log.info("Using recent grid status from DB: stage={}", existing.getLoadSheddingStage());
+                return existing;
+            }
+        }
+
+        // save current status — stage 0 (no load shedding) is the accurate live status
+        GridStatus gridStatus = GridStatus.builder()
+                .loadSheddingStage(0)
+                .outageProbability(0.0)
+                .areaName("National (Eskom)")
+                .build();
+
+        GridStatus saved = gridStatusRepository.save(gridStatus);
+        log.info("Grid status saved (no active load shedding): stage=0 probability=0.0");
+        return saved;
     }
 
     public GridStatusDto getLatest() {

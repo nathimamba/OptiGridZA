@@ -30,7 +30,7 @@ public class AuthController {
     @PatchMapping("/users/{email}/company")
     public ResponseEntity<Void> updateUserCompany(@PathVariable String email,
                                                   @RequestBody Map<String, String> body){
-        authService.updateUserCompany(email, body.get("CompanyId"));
+        authService.updateUserCompany(email, body.get("companyId"));
         return ResponseEntity.ok().build();
     }
 }

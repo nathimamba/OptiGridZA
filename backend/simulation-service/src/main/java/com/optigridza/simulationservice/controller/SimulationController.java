@@ -41,7 +41,6 @@ public class SimulationController {
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> {
                     VirtualBattery battery = VirtualBattery.builder()
-                            .id(UUID.randomUUID().toString())
                             .companyId(companyId)
                             .capacityKwh(10.0)
                             .currentSoc(50.0)

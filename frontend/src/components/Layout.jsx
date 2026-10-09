@@ -1,6 +1,6 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
-import { useTheme } from '../context/ThemeContext'
+import { useAuth } from '../context/authContextValue'
+import { useTheme } from '../context/themeContextValue'
 import { toDisplayName, ROLE_LABELS } from '../utils/displayName'
 
 const NAV_ITEMS = [
@@ -8,7 +8,9 @@ const NAV_ITEMS = [
   { path: '/battery', label: 'Battery Health', roles: ['TECHNICIAN', 'ENERGY_MANAGER', 'SYSTEM_ADMIN'] },
   { path: '/savings', label: 'Savings', roles: ['BUSINESS_OWNER', 'ENERGY_MANAGER', 'SYSTEM_ADMIN'] },
   { path: '/alerts', label: 'Alerts', roles: null },
+  { path: '/tickets', label: 'Tickets', roles: ['TECHNICIAN', 'ENERGY_MANAGER', 'SYSTEM_ADMIN'] },
   { path: '/companies', label: 'Companies', roles: ['SYSTEM_ADMIN'] },
+  { path: '/system-health', label: 'System Health', roles: ['SYSTEM_ADMIN'] },
 ]
 
 export default function Layout() {

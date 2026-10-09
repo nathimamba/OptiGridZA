@@ -9,13 +9,14 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "Alerts")
+@Table(name = "alerts")
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class Alert {
     @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
     @Column(name = "company_id", nullable = false)

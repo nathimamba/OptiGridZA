@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Bar } from 'react-chartjs-2'
 import { Chart as ChartJS, BarElement, LinearScale, CategoryScale, Tooltip } from 'chart.js'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../context/authContextValue'
 import { apiFetch } from '../services/api'
 
 ChartJS.register(BarElement, LinearScale, CategoryScale, Tooltip)

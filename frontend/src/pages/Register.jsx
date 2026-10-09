@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-
-const GATEWAY_URL = 'http://localhost:8080'
+import { API_BASE_URL } from '../services/api'
 
 export default function Register() {
   const [firstName, setFirstName] = useState('')
@@ -18,7 +17,7 @@ export default function Register() {
     setError('')
     setLoading(true)
     try {
-      const res = await fetch(`${GATEWAY_URL}/api/v1/auth/register`, {
+      const res = await fetch(`${API_BASE_URL}/api/v1/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ firstName, lastName, email, password, role }),

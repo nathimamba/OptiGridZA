@@ -1,16 +1,30 @@
-# React + Vite
+# OptiGridZA frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React and Vite dashboard for the OptiGridZA energy optimisation platform.
 
-Currently, two official plugins are available:
+## Run locally
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Install dependencies and start the development server:
 
-## React Compiler
+```sh
+npm ci
+npm run dev
+```
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+The frontend uses `http://localhost:8080` as the API gateway by default. To use a
+different gateway, set `VITE_API_URL` before starting Vite:
 
-## Expanding the ESLint configuration
+```sh
+VITE_API_URL=https://your-api.example.com npm run dev
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+`VITE_API_URL` is embedded into the browser bundle at build time. Set it to the
+deployed API gateway URL when building for production. Configure the gateway's
+`CORS_ALLOWED_ORIGIN` environment variable to the exact frontend origin.
+
+## Checks
+
+```sh
+npm run lint
+npm run build
+```

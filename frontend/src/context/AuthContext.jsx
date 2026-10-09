@@ -1,31 +1,37 @@
-import { createContext, useContext, useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { jwtDecode } from 'jwt-decode'
+import { AuthContext } from './authContextValue'
 
-const AuthContext = createContext(null)
+function getInitialAuth() {
+  const token = localStorage.getItem('token')
+  if (!token) return { user: null, invalidToken: false }
+
+  try {
+    const decoded = jwtDecode(token)
+    return {
+      user: {
+        email: decoded.sub,
+        role: decoded.role,
+        companyId: decoded.companyId,
+        firstName: decoded.firstName,
+        lastName: decoded.lastName,
+        token,
+      },
+      invalidToken: false,
+    }
+  } catch {
+    return { user: null, invalidToken: true }
+  }
+}
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null)
-  const [ready, setReady] = useState(false)
+  const [initialAuth] = useState(getInitialAuth)
+  const [user, setUser] = useState(initialAuth.user)
+  const ready = true
 
   useEffect(() => {
-    const token = localStorage.getItem('token')
-    if (token) {
-      try {
-        const decoded = jwtDecode(token)
-        setUser({
-          email: decoded.sub,
-          role: decoded.role,
-          companyId: decoded.companyId,
-          firstName: decoded.firstName,
-          lastName: decoded.lastName,
-          token,
-        })
-      } catch {
-        localStorage.removeItem('token')
-      }
-    }
-    setReady(true)
-  }, [])
+    if (initialAuth.invalidToken) localStorage.removeItem('token')
+  }, [initialAuth.invalidToken])
 
   const logout = () => {
     localStorage.removeItem('token')
@@ -38,5 +44,3 @@ export function AuthProvider({ children }) {
     </AuthContext.Provider>
   )
 }
-
-export const useAuth = () => useContext(AuthContext)

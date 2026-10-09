@@ -10,6 +10,8 @@ import BatteryHealth from './pages/BatteryHealth'
 import Savings from './pages/Savings'
 import Alerts from './pages/Alerts'
 import Companies from './pages/Companies'
+import SystemHealth from './pages/SystemHealth'
+import Tickets from './pages/Tickets'
 
 export default function App() {
   return (
@@ -25,7 +27,9 @@ export default function App() {
               <Route path="/battery" element={<BatteryHealth />} />
               <Route path="/savings" element={<Savings />} />
               <Route path="/alerts" element={<Alerts />} />
+              <Route path="/tickets" element={<Tickets />} />
               <Route path="/companies" element={<ProtectedRoute roles={['SYSTEM_ADMIN']}><Companies /></ProtectedRoute>} />
+              <Route path="/system-health" element={<ProtectedRoute roles={['SYSTEM_ADMIN']}><SystemHealth /></ProtectedRoute>} />
             </Route>
           </Routes>
         </BrowserRouter>

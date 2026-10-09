@@ -7,7 +7,7 @@ import com.optigridza.predictionservice.dto.WeatherDto;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 
-@FeignClient(name = "etl-service", configuration = FeignClientConfig.class)
+@FeignClient(name = "etl-service", configuration = FeignClientConfig.class, fallback = EtlServiceClientFallback.class)
 public interface EtlServiceClient {
     @GetMapping("/api/v1/etl/weather")
     WeatherDto getWeather();

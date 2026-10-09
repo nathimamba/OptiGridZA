@@ -18,8 +18,10 @@ public class PredictionService {
     private final EtlServiceClient etlClient;
     private final PredictionRepository predictionRepository;
     private final SimulationServiceClient simulationClient;
+    private final OnnxModelService onnxModelService;
 
-    private static final double DEFAULT_LOAD = 3.5;private static final double BATTERY_KWH  = 10.0;
+    private static final double DEFAULT_LOAD = 3.5;
+    private static final double BATTERY_KWH  = 10.0;
 
     public RecommendationResponse recommend(String companyId) {
 
@@ -27,15 +29,39 @@ public class PredictionService {
         GridStatusDto grid    = etlClient.getGridStatus();
         TariffDto tariff  = etlClient.getCurrentTariff();
 
-        // double soc  = simulationClient.getSoc(companyId).getSoc();
         SocResponse socData = simulationClient.getSoc(companyId);
         double soc = socData.getSoc();
         double capacityKwh = socData.getCapacityKwh();
 
         double load = DEFAULT_LOAD;
 
-        String action     = determineAction(weather, grid, tariff, soc);
-        double confidence = calculateConfidence(action, grid, tariff, weather);
+        // Feature order must exactly match training: solarForecastKwh, outageProbability,
+        // currentTariffRate, peakTariffRate, currentSoc, estimatedLoad, loadSheddingStage
+        float[] features = new float[]{
+                (float) weather.getSolarForecastKwh(),
+                (float) grid.getOutageProbability(),
+                (float) tariff.getRatePerKwh(),
+                (float) tariff.getPeakRate(),
+                (float) soc,
+                (float) load,
+                (float) grid.getLoadSheddingStage()
+        };
+
+        String action;
+        double confidence;
+
+        OnnxModelService.PredictionResult result = onnxModelService.predict(features);
+
+        if (result != null) {
+            action = result.action();
+            confidence = result.confidence();
+        } else {
+            // NFR-03: safe fallback when model fails to load or inference fails
+            action = "HOLD";
+            confidence = 0.0;
+            log.warn("Using NFR-03 safe HOLD fallback for company {}", companyId);
+        }
+
         String mode       = determineMode(action, grid, weather);
         double savings    = estimateSavings(action, tariff, weather, soc, capacityKwh);
         String reasoning  = buildReasoning(action, grid, tariff, weather, soc);
@@ -57,8 +83,8 @@ public class PredictionService {
 
         predictionRepository.save(record);
 
-        log.info("Recommendation for {}: {} confidence:{} mode:{}",
-                companyId, action, confidence, mode);
+        log.info("Recommendation for {}: {} confidence:{} mode:{} (model loaded: {})",
+                companyId, action, confidence, mode, onnxModelService.isModelLoaded());
 
         return RecommendationResponse.builder()
                 .companyId(companyId)
@@ -76,35 +102,6 @@ public class PredictionService {
                 .loadSheddingStage(grid.getLoadSheddingStage())
                 .validUntilEpoch(System.currentTimeMillis() + 1800000)
                 .build();
-    }
-
-    private String determineAction(WeatherDto w, GridStatusDto g,
-                                   TariffDto t, double soc) {
-        int    stage = g.getLoadSheddingStage();
-        double solar = w.getSolarForecastKwh();
-        double rate  = t.getRatePerKwh();
-        double peak  = t.getPeakRate();
-
-        if (stage >= 4 && soc > 20)        return "DISCHARGE";
-        if (soc < 15)                       return "CHARGE";
-        if (solar > 6.0 && stage == 0)      return "SOLAR_PRIORITY";
-        if (rate < peak * 0.6 && soc < 80) return "CHARGE";
-        if (stage >= 2 && soc > 40)         return "DISCHARGE";
-        if (solar > 4.0)                    return "SOLAR_PRIORITY";
-        return "HOLD";
-    }
-
-    private double calculateConfidence(String action, GridStatusDto g,
-                                       TariffDto t, WeatherDto w) {
-        return switch (action) {
-            case "DISCHARGE"      ->
-                    g.getLoadSheddingStage() >= 4 ? 0.95 : 0.75;
-            case "CHARGE"         ->
-                    t.getRatePerKwh() < t.getPeakRate() * 0.5 ? 0.90 : 0.70;
-            case "SOLAR_PRIORITY" ->
-                    w.getSolarForecastKwh() > 6.0 ? 0.88 : 0.72;
-            default -> 0.60;
-        };
     }
 
     private String determineMode(String action,

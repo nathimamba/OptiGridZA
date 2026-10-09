@@ -1,21 +1,43 @@
 import { useEffect, useState } from 'react'
 import { apiFetch } from '../services/api'
 
-async function geocodeCity(city) {
-  const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&country=ZA`)
+async function geocodeAddress(address) {
+  const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(address)}&count=1&country=ZA`)
   const data = await res.json()
   if (!data.results || data.results.length === 0) {
-    throw new Error('City not found — try a major South African city name')
+    throw new Error('Location not found — try a South African city or suburb name')
   }
-  return { latitude: data.results[0].latitude, longitude: data.results[0].longitude }
+  return { latitude: data.results[0].latitude, longitude: data.results[0].longitude, displayName: data.results[0].name }
+}
+
+function getBrowserLocation() {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) return reject(new Error('Geolocation not supported'))
+    navigator.geolocation.getCurrentPosition(
+      pos => resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
+      () => reject(new Error('Location access denied — enter address manually')),
+      { timeout: 10000 }
+    )
+  })
+}
+
+async function reverseGeocode(lat, lng) {
+  try {
+    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&addressdetails=1`)
+    const data = await res.json()
+    return data.display_name || `${lat.toFixed(4)}, ${lng.toFixed(4)}`
+  } catch {
+    return `${lat.toFixed(4)}, ${lng.toFixed(4)}`
+  }
 }
 
 export default function Companies() {
   const [companies, setCompanies] = useState([])
   const [error, setError] = useState('')
-  const [form, setForm] = useState({ name: '', address: '', industryType: '', contactEmail: '', contactPhone: '', city: '' })
+  const [form, setForm] = useState({ name: '', address: '', industryType: '', contactEmail: '', contactPhone: '', city: '', latitude: null, longitude: null })
   const [showModal, setShowModal] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [locating, setLocating] = useState(false)
 
   const [selectedCompany, setSelectedCompany] = useState(null)
   const [companyUsers, setCompanyUsers] = useState([])
@@ -30,17 +52,39 @@ export default function Companies() {
   }
   useEffect(load, [])
 
+  const useCurrentLocation = async () => {
+    setLocating(true)
+    setError('')
+    try {
+      const coords = await getBrowserLocation()
+      const address = await reverseGeocode(coords.latitude, coords.longitude)
+      setForm(f => ({ ...f, latitude: coords.latitude, longitude: coords.longitude, address, city: '' }))
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLocating(false)
+    }
+  }
+
   const submit = async (e) => {
     e.preventDefault()
     setError('')
     setSaving(true)
     try {
-      let latitude = null
-      let longitude = null
-      if (form.city.trim()) {
-        const coords = await geocodeCity(form.city.trim())
+      let latitude = form.latitude
+      let longitude = form.longitude
+
+      // If no coords from geolocation, try geocoding the city/address
+      if (latitude == null && form.city.trim()) {
+        const coords = await geocodeAddress(form.city.trim())
         latitude = coords.latitude
         longitude = coords.longitude
+      } else if (latitude == null && form.address.trim()) {
+        try {
+          const coords = await geocodeAddress(form.address.trim())
+          latitude = coords.latitude
+          longitude = coords.longitude
+        } catch { /* use default */ }
       }
 
       await apiFetch('/api/v1/companies', {
@@ -56,7 +100,7 @@ export default function Companies() {
         }),
       })
       setShowModal(false)
-      setForm({ name: '', address: '', industryType: '', contactEmail: '', contactPhone: '', city: '' })
+      setForm({ name: '', address: '', industryType: '', contactEmail: '', contactPhone: '', city: '', latitude: null, longitude: null })
       load()
     } catch (err) {
       setError(err.message || 'Could not create company — name may already be in use.')
@@ -198,8 +242,16 @@ export default function Companies() {
                 onChange={e => setForm({ ...form, name: e.target.value })} required />
               <input className="input input-bordered w-full" placeholder="Address" value={form.address}
                 onChange={e => setForm({ ...form, address: e.target.value })} />
-              <input className="input input-bordered w-full" placeholder="City (e.g. Cape Town) — used for weather/solar data" value={form.city}
-                onChange={e => setForm({ ...form, city: e.target.value })} />
+              <div className="flex gap-2">
+                <input className="input input-bordered w-full" placeholder="City (e.g. Cape Town) — for weather/solar data" value={form.city}
+                  onChange={e => setForm({ ...form, city: e.target.value, latitude: null, longitude: null })} />
+                <button type="button" className="btn btn-outline btn-sm whitespace-nowrap" onClick={useCurrentLocation} disabled={locating}>
+                  {locating ? <span className="loading loading-spinner loading-xs" /> : '📍 Use my location'}
+                </button>
+              </div>
+              {form.latitude != null && (
+                <div className="text-xs text-success">📍 Location set: {form.latitude.toFixed(4)}, {form.longitude.toFixed(4)}</div>
+              )}
               <input className="input input-bordered w-full" placeholder="Industry type" value={form.industryType}
                 onChange={e => setForm({ ...form, industryType: e.target.value })} />
               <input className="input input-bordered w-full" placeholder="Contact email" value={form.contactEmail}

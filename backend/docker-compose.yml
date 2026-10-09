@@ -10,10 +10,14 @@ services:
       POSTGRES_DB: optigridza_db
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: admin@123
-    ports:
-      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./db/init-schemas.sql:/docker-entrypoint-initdb.d/01-init-schemas.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - optigrid-network
 
@@ -21,8 +25,10 @@ services:
     build: ./eureka-service
     container_name: eureka-service
     restart: unless-stopped
+    environment:
+      JAVA_TOOL_OPTIONS: -XX:ActiveProcessorCount=1
     ports:
-      - "8761:8761"
+      - "127.0.0.1:8761:8761"
     networks:
       - optigrid-network
 
@@ -35,9 +41,12 @@ services:
       - postgres
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/optigridza_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: admin@123
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-service:8761/eureka/
+      JAVA_TOOL_OPTIONS: -XX:ActiveProcessorCount=1
     ports:
-      - "8081:8081"
+      - "127.0.0.1:8081:8081"
     networks:
       - optigrid-network
 
@@ -50,9 +59,12 @@ services:
       - postgres
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/optigridza_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: admin@123
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-service:8761/eureka/
+      JAVA_TOOL_OPTIONS: -XX:ActiveProcessorCount=1
     ports:
-      - "8082:8082"
+      - "127.0.0.1:8082:8082"
     networks:
       - optigrid-network
 
@@ -60,14 +72,20 @@ services:
     build: ./etl-service
     container_name: etl-service
     restart: unless-stopped
+    init: true
     depends_on:
       - eureka-service
       - postgres
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/optigridza_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: admin@123
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-service:8761/eureka/
+      APP_DATA_FETCH_ENABLED: ${APP_DATA_FETCH_ENABLED:-false}
+      ESKOM_API_KEY: ${ESKOM_API_KEY:-A129B4CD-069D4E92-9E4DE31D-09C7934A}
+      JAVA_TOOL_OPTIONS: -XX:ActiveProcessorCount=1
     ports:
-      - "8083:8083"
+      - "127.0.0.1:8083:8083"
     networks:
       - optigrid-network
 
@@ -82,9 +100,12 @@ services:
       - simulation-service
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/optigridza_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: admin@123
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-service:8761/eureka/
+      JAVA_TOOL_OPTIONS: -XX:ActiveProcessorCount=1
     ports:
-      - "8084:8084"
+      - "127.0.0.1:8084:8084"
     networks:
       - optigrid-network
 
@@ -98,9 +119,12 @@ services:
       - notification-service
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/optigridza_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: admin@123
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-service:8761/eureka/
+      JAVA_TOOL_OPTIONS: -XX:ActiveProcessorCount=1
     ports:
-      - "8085:8085"
+      - "127.0.0.1:8085:8085"
     networks:
       - optigrid-network
 
@@ -113,9 +137,12 @@ services:
       - postgres
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/optigridza_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: admin@123
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-service:8761/eureka/
+      JAVA_TOOL_OPTIONS: -XX:ActiveProcessorCount=1
     ports:
-      - "8086:8086"
+      - "127.0.0.1:8086:8086"
     networks:
       - optigrid-network
 
@@ -133,8 +160,9 @@ services:
       - notification-service
     environment:
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-service:8761/eureka/
+      JAVA_TOOL_OPTIONS: -XX:ActiveProcessorCount=1 -Xms128m -Xmx512m
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
     networks:
       - optigrid-network
 

@@ -1,9 +1,8 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../context/authContextValue'
 import { jwtDecode } from 'jwt-decode'
-
-const GATEWAY_URL = 'http://localhost:8080'
+import { API_BASE_URL } from '../services/api'
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -18,7 +17,7 @@ export default function Login() {
     setError('')
     setLoading(true)
     try {
-      const res = await fetch(`${GATEWAY_URL}/api/v1/auth/login`, {
+      const res = await fetch(`${API_BASE_URL}/api/v1/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -27,7 +26,7 @@ export default function Login() {
       const data = await res.json()
       localStorage.setItem('token', data.token)
       const decoded = jwtDecode(data.token)
-      setUser({ email: decoded.sub, role: decoded.role, companyId: decoded.companyId, token: data.token })
+      setUser({ email: decoded.sub, role: decoded.role, companyId: decoded.companyId, firstName: decoded.firstName, lastName: decoded.lastName, token: data.token })
       navigate('/dashboard')
     } catch (err) {
       setError(err.message)

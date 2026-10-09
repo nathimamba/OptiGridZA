@@ -17,7 +17,6 @@ public class AlertService {
 
     public Alert createAlert(AlertRequest request) {
         Alert alert = Alert.builder()
-                .id(UUID.randomUUID().toString())
                 .companyId(request.getCompanyId())
                 .alertType(request.getAlertType())
                 .severity(request.getSeverity())
