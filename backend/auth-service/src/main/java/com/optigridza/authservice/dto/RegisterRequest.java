@@ -1,8 +1,9 @@
 package com.optigridza.authservice.dto;
 
-import com.optigridza.authservice.enums.Role;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 @Data
@@ -19,9 +20,9 @@ public class RegisterRequest {
     private String email;
 
     @NotBlank
+    @Size(min = 12, max = 72)
+    @Pattern(regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^A-Za-z\\d]).+$")
     private String password;
-
-    private Role role;
 
     private String companyId;
 }

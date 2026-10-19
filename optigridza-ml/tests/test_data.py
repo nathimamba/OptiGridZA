@@ -8,9 +8,8 @@ class TestTrainingData(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         data_path = (
-            Path(__file__).resolve().parents[1]
-            / "data"
-            / "processed"
+            Path(__file__).resolve().parent
+            / "fixtures"
             / "training_data.csv"
         )
         with data_path.open(newline="", encoding="utf-8") as data_file:

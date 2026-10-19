@@ -26,13 +26,12 @@ export default function SystemHealth() {
   const [lastChecked, setLastChecked] = useState(null)
 
   const checkAll = useCallback(async () => {
-    const token = localStorage.getItem('token')
     const results = await Promise.all(
       SERVICES.map(async (svc) => {
         const start = performance.now()
         try {
           const res = await fetch(`${API_BASE_URL}${svc.path}`, {
-            headers: token ? { Authorization: `Bearer ${token}` } : {},
+            credentials: 'include',
           })
           const latency = Math.round(performance.now() - start)
           if (res.ok) {

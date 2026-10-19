@@ -3,7 +3,7 @@
 /build/
 
 # IDE specific files
-/.idea/
+**/.idea/
 /*.iml
 /.classpath
 /.project
@@ -13,10 +13,12 @@
 
 # Log files
 *.log
+**/hs_err_pid*.log
 
 # Mobile / OS files
 .DS_Store
 Thumbs.db
 
 # Environment secrets
-.env
+**/.env
+**/target/

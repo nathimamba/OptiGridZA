@@ -8,7 +8,7 @@ spring:
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/optigridza_db}
     username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:admin@123}
+    password: ${DB_PASSWORD}
   jpa:
     hibernate:
       ddl-auto: ${DDL_AUTO:update}
@@ -19,8 +19,15 @@ spring:
         default_schema: auth
 
 jwt:
-  secret: ${JWT_SECRET:R0UD3CdgthTnzfxxoZsnhTjredMwKfaunCF2K8qcCdU}
+  secret: ${JWT_SECRET}
   expiration: ${JWT_EXPIRATION:86400000}
+
+auth:
+  cookie:
+    secure: ${COOKIE_SECURE:false}
+  bootstrap-admin:
+    email: ${BOOTSTRAP_ADMIN_EMAIL:}
+    password: ${BOOTSTRAP_ADMIN_PASSWORD:}
 
 eureka:
   client:

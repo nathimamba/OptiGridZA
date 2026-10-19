@@ -7,10 +7,12 @@ import com.optigridza.authservice.enums.Role;
 import com.optigridza.authservice.model.User;
 import com.optigridza.authservice.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 
 @Service
@@ -23,7 +25,7 @@ public class AuthService {
 
     public AuthResponse register(RegisterRequest request){
         if(userRepository.existsByEmail(request.getEmail())){
-            throw new RuntimeException("Email already registered");
+                        throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already registered");
         }
 
         User user = User.builder()
@@ -31,7 +33,7 @@ public class AuthService {
                 .lastName(request.getLastName())
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
-                .role(request.getRole())
+                .role(Role.ENERGY_MANAGER)
                 .companyId(request.getCompanyId())
                 .active(true)
                 .build();
@@ -68,7 +70,7 @@ public class AuthService {
         );
 
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
         String token = jwtService.generatedToken(
                 user.getEmail(),
@@ -89,9 +91,21 @@ public class AuthService {
                 .build();
     }
 
+    public AuthResponse currentUser(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        return AuthResponse.builder()
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
+                .email(user.getEmail())
+                .role(user.getRole().name())
+                .companyId(user.getCompanyId())
+                .build();
+    }
+
     public void updateUserCompany(String email, String companyId) {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found: " + email));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found: " + email));
         user.setCompanyId(companyId);
         userRepository.save(user);
     }

@@ -1,16 +1,17 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { API_BASE_URL } from '../services/api'
+import { useAuth } from '../context/authContextValue'
 
 export default function Register() {
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [role, setRole] = useState('ENERGY_MANAGER')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
+  const { setUser } = useAuth()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -19,11 +20,13 @@ export default function Register() {
     try {
       const res = await fetch(`${API_BASE_URL}/api/v1/auth/register`, {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ firstName, lastName, email, password, role }),
+        body: JSON.stringify({ firstName, lastName, email, password }),
       })
       if (!res.ok) throw new Error('Registration failed — email may already be in use')
-      navigate('/')
+      setUser(await res.json())
+      navigate('/dashboard')
     } catch (err) {
       setError(err.message)
     } finally {
@@ -60,17 +63,6 @@ export default function Register() {
               <input type="password" className="input input-bordered w-full" value={password}
                 onChange={e => setPassword(e.target.value)} required />
             </label>
-            <label className="form-control">
-              <span className="label-text text-xs mb-1">Role</span>
-              <select className="select select-bordered w-full" value={role} onChange={e => setRole(e.target.value)}>
-                <option value="SYSTEM_ADMIN">System Admin</option>
-                <option value="ENERGY_MANAGER">Energy Manager</option>
-                <option value="BUSINESS_OWNER">Business Owner</option>
-                <option value="TECHNICIAN">Technician</option>
-                <option value="VIEWER">Viewer</option>
-              </select>
-            </label>
-
             {error && <div className="alert alert-error py-2 text-sm">{error}</div>}
 
             <button type="submit" className="btn btn-primary w-full" disabled={loading}>

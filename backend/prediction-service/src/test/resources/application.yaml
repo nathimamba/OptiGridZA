@@ -14,7 +14,7 @@ spring:
     database-platform: org.hibernate.dialect.H2Dialect
 
 jwt:
-  secret: R0UD3CdgthTnzfxxoZsnhTjredMwKfaunCF2K8qcCdU
+  secret: MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
   expiration: 86400000
 
 eureka:

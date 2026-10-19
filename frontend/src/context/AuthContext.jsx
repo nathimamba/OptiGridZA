@@ -1,41 +1,31 @@
 import { useState, useEffect } from 'react'
-import { jwtDecode } from 'jwt-decode'
+import { apiFetch } from '../services/api'
 import { AuthContext } from './authContextValue'
 
-function getInitialAuth() {
-  const token = localStorage.getItem('token')
-  if (!token) return { user: null, invalidToken: false }
-
-  try {
-    const decoded = jwtDecode(token)
-    return {
-      user: {
-        email: decoded.sub,
-        role: decoded.role,
-        companyId: decoded.companyId,
-        firstName: decoded.firstName,
-        lastName: decoded.lastName,
-        token,
-      },
-      invalidToken: false,
-    }
-  } catch {
-    return { user: null, invalidToken: true }
-  }
-}
-
 export function AuthProvider({ children }) {
-  const [initialAuth] = useState(getInitialAuth)
-  const [user, setUser] = useState(initialAuth.user)
-  const ready = true
+  const [user, setUser] = useState(null)
+  const [ready, setReady] = useState(false)
 
   useEffect(() => {
-    if (initialAuth.invalidToken) localStorage.removeItem('token')
-  }, [initialAuth.invalidToken])
+    localStorage.removeItem('token')
+    let active = true
+    apiFetch('/api/v1/auth/me')
+      .then((currentUser) => {
+        if (active) setUser(currentUser)
+      })
+      .catch(() => {
+        if (active) setUser(null)
+      })
+      .finally(() => {
+        if (active) setReady(true)
+      })
+    return () => { active = false }
+  }, [])
 
   const logout = () => {
-    localStorage.removeItem('token')
-    setUser(null)
+    apiFetch('/api/v1/auth/logout', { method: 'POST' })
+      .catch(() => {})
+      .finally(() => setUser(null))
   }
 
   return (

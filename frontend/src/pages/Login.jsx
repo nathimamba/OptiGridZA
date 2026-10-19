@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/authContextValue'
-import { jwtDecode } from 'jwt-decode'
 import { API_BASE_URL } from '../services/api'
 
 export default function Login() {
@@ -19,14 +18,13 @@ export default function Login() {
     try {
       const res = await fetch(`${API_BASE_URL}/api/v1/auth/login`, {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       })
       if (!res.ok) throw new Error('Invalid email or password')
       const data = await res.json()
-      localStorage.setItem('token', data.token)
-      const decoded = jwtDecode(data.token)
-      setUser({ email: decoded.sub, role: decoded.role, companyId: decoded.companyId, firstName: decoded.firstName, lastName: decoded.lastName, token: data.token })
+      setUser(data)
       navigate('/dashboard')
     } catch (err) {
       setError(err.message)

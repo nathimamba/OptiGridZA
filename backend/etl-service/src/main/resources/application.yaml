@@ -8,7 +8,7 @@ spring:
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/optigridza_db}
     username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:admin@123}
+    password: ${DB_PASSWORD}
   jpa:
     hibernate:
       ddl-auto: ${DDL_AUTO:update}
@@ -19,7 +19,7 @@ spring:
         default_schema: etl
 
 jwt:
-  secret: ${JWT_SECRET:R0UD3CdgthTnzfxxoZsnhTjredMwKfaunCF2K8qcCdU}
+  secret: ${JWT_SECRET}
   expiration: ${JWT_EXPIRATION:86400000}
 
 eureka:
@@ -33,7 +33,7 @@ api:
   openmeteo:
     base-url: https://api.open-meteo.com/v1/forecast
   eskomsepush:
-    key: ${ESKOM_API_KEY:A129B4CD-069D4E92-9E4DE31D-09C7934A}
+    key: ${ESKOM_API_KEY:}
     base-url: https://developer.sepush.co.za/business/2.0
   location:
     city: Pretoria

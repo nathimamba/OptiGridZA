@@ -9,7 +9,7 @@ services:
     environment:
       POSTGRES_DB: optigridza_db
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: admin@123
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in backend/.env}
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./db/init-schemas.sql:/docker-entrypoint-initdb.d/01-init-schemas.sql:ro
@@ -42,8 +42,12 @@ services:
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/optigridza_db
       SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: admin@123
-      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-service:8761/eureka/
+      DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in backend/.env}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in backend/.env}
+      EUREKA_URI: http://eureka-service:8761/eureka/
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      BOOTSTRAP_ADMIN_EMAIL: ${BOOTSTRAP_ADMIN_EMAIL:-}
+      BOOTSTRAP_ADMIN_PASSWORD: ${BOOTSTRAP_ADMIN_PASSWORD:-}
       JAVA_TOOL_OPTIONS: -XX:ActiveProcessorCount=1
     ports:
       - "127.0.0.1:8081:8081"
@@ -60,8 +64,9 @@ services:
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/optigridza_db
       SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: admin@123
-      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-service:8761/eureka/
+      DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in backend/.env}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in backend/.env}
+      EUREKA_URI: http://eureka-service:8761/eureka/
       JAVA_TOOL_OPTIONS: -XX:ActiveProcessorCount=1
     ports:
       - "127.0.0.1:8082:8082"
@@ -79,10 +84,11 @@ services:
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/optigridza_db
       SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: admin@123
-      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-service:8761/eureka/
+      DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in backend/.env}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in backend/.env}
+      EUREKA_URI: http://eureka-service:8761/eureka/
       APP_DATA_FETCH_ENABLED: ${APP_DATA_FETCH_ENABLED:-false}
-      ESKOM_API_KEY: ${ESKOM_API_KEY:-A129B4CD-069D4E92-9E4DE31D-09C7934A}
+      ESKOM_API_KEY: ${ESKOM_API_KEY:-}
       JAVA_TOOL_OPTIONS: -XX:ActiveProcessorCount=1
     ports:
       - "127.0.0.1:8083:8083"
@@ -101,8 +107,9 @@ services:
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/optigridza_db
       SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: admin@123
-      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-service:8761/eureka/
+      DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in backend/.env}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in backend/.env}
+      EUREKA_URI: http://eureka-service:8761/eureka/
       JAVA_TOOL_OPTIONS: -XX:ActiveProcessorCount=1
     ports:
       - "127.0.0.1:8084:8084"
@@ -120,8 +127,9 @@ services:
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/optigridza_db
       SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: admin@123
-      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-service:8761/eureka/
+      DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in backend/.env}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in backend/.env}
+      EUREKA_URI: http://eureka-service:8761/eureka/
       JAVA_TOOL_OPTIONS: -XX:ActiveProcessorCount=1
     ports:
       - "127.0.0.1:8085:8085"
@@ -138,8 +146,9 @@ services:
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/optigridza_db
       SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: admin@123
-      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-service:8761/eureka/
+      DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in backend/.env}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in backend/.env}
+      EUREKA_URI: http://eureka-service:8761/eureka/
       JAVA_TOOL_OPTIONS: -XX:ActiveProcessorCount=1
     ports:
       - "127.0.0.1:8086:8086"
@@ -159,7 +168,9 @@ services:
       - simulation-service
       - notification-service
     environment:
-      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-service:8761/eureka/
+      EUREKA_URI: http://eureka-service:8761/eureka/
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in backend/.env}
+      CORS_ALLOWED_ORIGIN: ${CORS_ALLOWED_ORIGIN:-http://localhost:5173}
       JAVA_TOOL_OPTIONS: -XX:ActiveProcessorCount=1 -Xms128m -Xmx512m
     ports:
       - "127.0.0.1:8080:8080"
