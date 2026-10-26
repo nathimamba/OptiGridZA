@@ -26,10 +26,11 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-
+import com.optigridza.predictionservice.service.OnnxModelService;
 @WebMvcTest(PredictionController.class)
 class PredictionControllerTest {
-
+    @MockitoBean
+    private OnnxModelService onnxModelService;
     @Autowired
     private MockMvc mockMvc;
 

@@ -140,7 +140,15 @@ public class EskomService {
                 .fetchedAt(g.getFetchedAt())
                 .build();
     }
-
+    public GridStatusDto saveDemoStatus(int stage) {
+        int s = Math.max(0, Math.min(8, stage));
+        GridStatus saved = gridStatusRepository.save(GridStatus.builder()
+                .loadSheddingStage(s)
+                .outageProbability(Math.min(1.0, s * 0.125))
+                .areaName("DEMO OVERRIDE (simulated)")
+                .build());
+        return toDto(saved);
+    }
     private GridStatusDto defaultDto() {
         return GridStatusDto.builder()
                 .loadSheddingStage(0)

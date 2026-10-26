@@ -2,6 +2,7 @@ package com.optigridza.predictionservice.controller;
 
 import com.optigridza.predictionservice.dto.RecommendationResponse;
 import com.optigridza.predictionservice.model.PredictionRecord;
+import com.optigridza.predictionservice.service.OnnxModelService;
 import com.optigridza.predictionservice.service.PredictionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +21,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class PredictionController {
     private final PredictionService predictionService;
+    private final OnnxModelService onnxModelService;
 
     @GetMapping("/recommend/{companyId}")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN','ENERGY_MANAGER','BUSINESS_OWNER')")
@@ -29,37 +31,37 @@ public class PredictionController {
 
         String jwtCompanyId = (String) authentication.getCredentials();
         boolean isAdmin = authentication.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority()
-                        .equals("ROLE_SYSTEM_ADMIN"));
+                .anyMatch(a -> a.getAuthority().equals("ROLE_SYSTEM_ADMIN"));
 
         if (!isAdmin && !companyId.equals(jwtCompanyId)) {
             return ResponseEntity.status(403).build();
         }
 
-        return ResponseEntity.ok(
-                predictionService.recommend(companyId));
+        return ResponseEntity.ok(predictionService.recommend(companyId));
     }
 
     @GetMapping("/history/{companyId}")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN','ENERGY_MANAGER')")
     public ResponseEntity<List<PredictionRecord>> getHistory(
             @PathVariable String companyId) {
-        return ResponseEntity.ok(
-                predictionService.getHistory(companyId));
+        return ResponseEntity.ok(predictionService.getHistory(companyId));
     }
 
     @GetMapping("/model-info")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<Map<String, Object>> modelInfo() {
+        boolean loaded = onnxModelService.isModelLoaded();
         return ResponseEntity.ok(Map.of(
-                "modelType", "Rule-based engine — ONNX model pending training",
+                "modelType", loaded
+                        ? "Random Forest classifier (scikit-learn, exported to ONNX Runtime)"
+                        : "ONNX model not loaded - safe HOLD fallback active",
+                "modelLoaded", loaded,
                 "features", List.of(
                         "solarForecastKwh", "outageProbability",
                         "currentTariffRate", "peakTariffRate",
                         "currentSoc", "estimatedLoad",
                         "loadSheddingStage"),
-                "actions", List.of(
-                        "CHARGE", "DISCHARGE", "HOLD", "SOLAR_PRIORITY"),
+                "actions", List.of("CHARGE", "DISCHARGE", "HOLD", "SOLAR_PRIORITY"),
                 "version", "1.0.0"
         ));
     }

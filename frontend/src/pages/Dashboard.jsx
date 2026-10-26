@@ -97,14 +97,16 @@ function CompanyDashboard() {
   const [simError, setSimError] = useState('')
   const [simSuccess, setSimSuccess] = useState('')
 
-  const load = useCallback(async () => {
+    const load = useCallback(async () => {
     try {
-      const [rec, health, comp] = await Promise.all([
+      const results = await Promise.allSettled([
         apiFetch(`/api/v1/prediction/recommend/${user.companyId}`),
         apiFetch(`/api/v1/simulation/battery/health/${user.companyId}`),
         apiFetch(`/api/v1/companies/${user.companyId}`),
       ])
-      setRecommendation(rec)
+      const [rec, health, comp] = results.map(r => (r.status === 'fulfilled' ? r.value : null))
+      if (!health) throw new Error('battery unavailable')
+      setRecommendation(rec)   // null for roles not allowed to see recommendations
       setBattery(health)
       setCompany(comp)
       setTrend(prev => [...prev, {

@@ -6,8 +6,11 @@ import com.optigridza.notificationservice.service.TicketService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
+import java.util.Objects;
 import java.util.List;
 import java.util.Map;
 
@@ -24,7 +27,13 @@ public class TicketController {
 
     @GetMapping("/company/{companyId}")
     @PreAuthorize("hasAnyRole('TECHNICIAN','ENERGY_MANAGER','SYSTEM_ADMIN')")
-    public ResponseEntity<List<Ticket>> getTicketsForCompany(@PathVariable String companyId) {
+    public ResponseEntity<List<Ticket>> getTicketsForCompany(@PathVariable String companyId,
+                                                             Authentication auth) {
+        boolean admin = auth.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_SYSTEM_ADMIN"));
+        if (!admin && !Objects.equals(companyId, auth.getCredentials())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Company mismatch");
+        }
         return ResponseEntity.ok(ticketService.getTicketsForCompany(companyId));
     }
 

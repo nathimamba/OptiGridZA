@@ -24,16 +24,25 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
 
     public AuthResponse register(RegisterRequest request){
+        return register(request,false);
+    }
+    public AuthResponse register(RegisterRequest request, boolean callerIsAdmin){
         if(userRepository.existsByEmail(request.getEmail())){
                         throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already registered");
         }
+
+        Role assignedRole = (callerIsAdmin
+                && request.getRole() != null
+                && request.getRole() != Role.SYSTEM_ADMIN)
+                ? request.getRole()
+                : Role.ENERGY_MANAGER;
 
         User user = User.builder()
                 .firstName(request.getFirstName())
                 .lastName(request.getLastName())
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
-                .role(Role.ENERGY_MANAGER)
+                .role(assignedRole)
                 .companyId(request.getCompanyId())
                 .active(true)
                 .build();

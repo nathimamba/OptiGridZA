@@ -1,5 +1,6 @@
 package com.optigridza.authservice.dto;
 
+import com.optigridza.authservice.enums.Role;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -25,4 +26,6 @@ public class RegisterRequest {
     private String password;
 
     private String companyId;
+
+    private Role role;
 }

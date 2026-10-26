@@ -1,5 +1,5 @@
 package com.optigridza.etlservice.controller;
-
+import org.springframework.web.bind.annotation.RequestParam;
 import com.optigridza.etlservice.dto.GridStatusDto;
 import com.optigridza.etlservice.dto.TariffDto;
 import com.optigridza.etlservice.dto.WeatherDto;
@@ -13,7 +13,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
 @RestController
 @RequestMapping("/api/v1/etl")
 @RequiredArgsConstructor
@@ -21,7 +20,6 @@ public class EtlController {
     private final WeatherService weatherService;
     private final EskomService eskomService;
     private final TariffService tariffService;
-
     // GET /api/v1/etl/weather
     // returns latest weather and solar forecast
     @GetMapping("/weather")
@@ -45,7 +43,11 @@ public class EtlController {
     public ResponseEntity<TariffDto> getCurrentTariff() {
         return ResponseEntity.ok(tariffService.getCurrentTariff());
     }
-
+    @PostMapping("/demo/grid-status")
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    public ResponseEntity<GridStatusDto> demoGridStatus(@RequestParam int stage) {
+        return ResponseEntity.ok(eskomService.saveDemoStatus(stage));
+    }
     // POST /api/v1/etl/fetch
     // manually trigger a data fetch — admin only
     @PostMapping("/fetch")

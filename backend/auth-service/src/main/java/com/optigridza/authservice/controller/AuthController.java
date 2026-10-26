@@ -34,7 +34,12 @@ public class AuthController {
     public ResponseEntity<AuthResponse> register(
             @Valid @RequestBody RegisterRequest request,
             Authentication authentication) {
-        AuthResponse response = authService.register(request);
+        boolean callerIsAdmin = authentication != null
+                && !(authentication instanceof AnonymousAuthenticationToken)
+                && authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_SYSTEM_ADMIN"));
+
+        AuthResponse response = authService.register(request, callerIsAdmin);
         if (authentication == null || authentication instanceof AnonymousAuthenticationToken) {
             return authResponse(response);
         }
