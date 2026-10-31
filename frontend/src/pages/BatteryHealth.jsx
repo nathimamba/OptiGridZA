@@ -1,20 +1,20 @@
 import { useEffect, useState } from 'react'
-import { useAuth } from '../context/authContextValue'
+import { useCompanyScope } from '../context/companyScopeContextValue'
 import { apiFetch } from '../services/api'
 
 const healthBadge = { GOOD: 'badge-success', WARNING: 'badge-warning', CRITICAL: 'badge-error' }
 
 export default function BatteryHealth() {
-  const { user } = useAuth()
+  const { activeCompanyId: companyId } = useCompanyScope()
   const [battery, setBattery] = useState(null)
   const [error, setError] = useState('')
 
   useEffect(() => {
-    if (!user?.companyId) return
-    apiFetch(`/api/v1/simulation/battery/health/${user.companyId}`)
+    if (!companyId) return
+    apiFetch(`/api/v1/simulation/battery/health/${companyId}`)
       .then(setBattery)
       .catch(() => setError('Could not load battery data.'))
-  }, [user])
+  }, [companyId])
 
   return (
     <div>

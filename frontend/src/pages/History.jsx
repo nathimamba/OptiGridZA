@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Line } from 'react-chartjs-2'
 import { Chart as ChartJS, LineElement, PointElement, LinearScale, CategoryScale, Tooltip, Filler, Legend } from 'chart.js'
-import { useAuth } from '../context/authContextValue'
+import { useCompanyScope } from '../context/companyScopeContextValue'
 import { apiFetch } from '../services/api'
 
 ChartJS.register(LineElement, PointElement, LinearScale, CategoryScale, Tooltip, Filler, Legend)
@@ -85,18 +85,18 @@ function downloadPDF(records, companyName) {
 const actionColor = { CHARGE: '#1E7A6B', DISCHARGE: '#C0341B', HOLD: '#F2610C', SOLAR_PRIORITY: '#EAB308' }
 
 export default function History() {
-  const { user } = useAuth()
+  const { activeCompanyId: companyId } = useCompanyScope()
   const [records, setRecords] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
   useEffect(() => {
-    if (!user?.companyId) return
-    apiFetch(`/api/v1/prediction/history/${user.companyId}`)
+    if (!companyId) return
+    apiFetch(`/api/v1/prediction/history/${companyId}`)
       .then(data => { setRecords(data); setError('') })
       .catch(() => setError('Could not load prediction history.'))
       .finally(() => setLoading(false))
-  }, [user])
+  }, [companyId])
 
   const totalSavings = records.reduce((s, r) => s + r.estimatedSavingsRand, 0)
   const avgConfidence = records.length ? records.reduce((s, r) => s + r.confidence, 0) / records.length : 0

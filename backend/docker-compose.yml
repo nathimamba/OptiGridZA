@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
 
   postgres:
@@ -26,7 +24,8 @@ services:
     container_name: eureka-service
     restart: unless-stopped
     environment:
-      JAVA_TOOL_OPTIONS: -XX:ActiveProcessorCount=1
+      JAVA_TOOL_OPTIONS: -XX:ActiveProcessorCount=1 -Xms256m -Xmx512m
+      EUREKA_SERVER_ENABLE_SELF_PRESERVATION: "true"
     ports:
       - "127.0.0.1:8761:8761"
     networks:
@@ -37,18 +36,25 @@ services:
     container_name: auth-service
     restart: unless-stopped
     depends_on:
-      - eureka-service
-      - postgres
+      postgres:
+        condition: service_healthy
+      eureka-service:
+        condition: service_started
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/optigridza_db
       SPRING_DATASOURCE_USERNAME: postgres
       DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in backend/.env}
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in backend/.env}
       EUREKA_URI: http://eureka-service:8761/eureka/
+      EUREKA_INSTANCE_LEASE_RENEWAL_INTERVAL_IN_SECONDS: "15"
+      EUREKA_INSTANCE_LEASE_EXPIRATION_DURATION_IN_SECONDS: "45"
+      EUREKA_CLIENT_REGISTRY_FETCH_INTERVAL_SECONDS: "15"
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
       BOOTSTRAP_ADMIN_EMAIL: ${BOOTSTRAP_ADMIN_EMAIL:-}
       BOOTSTRAP_ADMIN_PASSWORD: ${BOOTSTRAP_ADMIN_PASSWORD:-}
-      JAVA_TOOL_OPTIONS: -XX:ActiveProcessorCount=1
+      JAVA_TOOL_OPTIONS: -XX:ActiveProcessorCount=2 -Xms256m -Xmx512m
+      SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE: "10"
+      SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE: "3"
     ports:
       - "127.0.0.1:8081:8081"
     networks:
@@ -59,15 +65,22 @@ services:
     container_name: company-service
     restart: unless-stopped
     depends_on:
-      - eureka-service
-      - postgres
+      postgres:
+        condition: service_healthy
+      eureka-service:
+        condition: service_started
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/optigridza_db
       SPRING_DATASOURCE_USERNAME: postgres
       DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in backend/.env}
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in backend/.env}
       EUREKA_URI: http://eureka-service:8761/eureka/
-      JAVA_TOOL_OPTIONS: -XX:ActiveProcessorCount=1
+      EUREKA_INSTANCE_LEASE_RENEWAL_INTERVAL_IN_SECONDS: "15"
+      EUREKA_INSTANCE_LEASE_EXPIRATION_DURATION_IN_SECONDS: "45"
+      EUREKA_CLIENT_REGISTRY_FETCH_INTERVAL_SECONDS: "15"
+      JAVA_TOOL_OPTIONS: -XX:ActiveProcessorCount=2 -Xms256m -Xmx512m
+      SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE: "10"
+      SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE: "3"
     ports:
       - "127.0.0.1:8082:8082"
     networks:
@@ -79,40 +92,26 @@ services:
     restart: unless-stopped
     init: true
     depends_on:
-      - eureka-service
-      - postgres
+      postgres:
+        condition: service_healthy
+      eureka-service:
+        condition: service_started
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/optigridza_db
       SPRING_DATASOURCE_USERNAME: postgres
       DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in backend/.env}
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in backend/.env}
       EUREKA_URI: http://eureka-service:8761/eureka/
+      EUREKA_INSTANCE_LEASE_RENEWAL_INTERVAL_IN_SECONDS: "15"
+      EUREKA_INSTANCE_LEASE_EXPIRATION_DURATION_IN_SECONDS: "45"
+      EUREKA_CLIENT_REGISTRY_FETCH_INTERVAL_SECONDS: "15"
       APP_DATA_FETCH_ENABLED: ${APP_DATA_FETCH_ENABLED:-false}
       ESKOM_API_KEY: ${ESKOM_API_KEY:-}
-      JAVA_TOOL_OPTIONS: -XX:ActiveProcessorCount=1
+      JAVA_TOOL_OPTIONS: -XX:ActiveProcessorCount=2 -Xms256m -Xmx512m
+      SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE: "10"
+      SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE: "3"
     ports:
       - "127.0.0.1:8083:8083"
-    networks:
-      - optigrid-network
-
-  prediction-service:
-    build: ./prediction-service
-    container_name: prediction-service
-    restart: unless-stopped
-    depends_on:
-      - eureka-service
-      - postgres
-      - etl-service
-      - simulation-service
-    environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/optigridza_db
-      SPRING_DATASOURCE_USERNAME: postgres
-      DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in backend/.env}
-      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in backend/.env}
-      EUREKA_URI: http://eureka-service:8761/eureka/
-      JAVA_TOOL_OPTIONS: -XX:ActiveProcessorCount=1
-    ports:
-      - "127.0.0.1:8084:8084"
     networks:
       - optigrid-network
 
@@ -121,16 +120,24 @@ services:
     container_name: simulation-service
     restart: unless-stopped
     depends_on:
-      - eureka-service
-      - postgres
-      - notification-service
+      postgres:
+        condition: service_healthy
+      eureka-service:
+        condition: service_started
+      notification-service:
+        condition: service_started
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/optigridza_db
       SPRING_DATASOURCE_USERNAME: postgres
       DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in backend/.env}
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in backend/.env}
       EUREKA_URI: http://eureka-service:8761/eureka/
-      JAVA_TOOL_OPTIONS: -XX:ActiveProcessorCount=1
+      EUREKA_INSTANCE_LEASE_RENEWAL_INTERVAL_IN_SECONDS: "15"
+      EUREKA_INSTANCE_LEASE_EXPIRATION_DURATION_IN_SECONDS: "45"
+      EUREKA_CLIENT_REGISTRY_FETCH_INTERVAL_SECONDS: "15"
+      JAVA_TOOL_OPTIONS: -XX:ActiveProcessorCount=2 -Xms256m -Xmx512m
+      SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE: "10"
+      SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE: "3"
     ports:
       - "127.0.0.1:8085:8085"
     networks:
@@ -141,17 +148,54 @@ services:
     container_name: notification-service
     restart: unless-stopped
     depends_on:
-      - eureka-service
-      - postgres
+      postgres:
+        condition: service_healthy
+      eureka-service:
+        condition: service_started
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/optigridza_db
       SPRING_DATASOURCE_USERNAME: postgres
       DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in backend/.env}
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in backend/.env}
       EUREKA_URI: http://eureka-service:8761/eureka/
-      JAVA_TOOL_OPTIONS: -XX:ActiveProcessorCount=1
+      EUREKA_INSTANCE_LEASE_RENEWAL_INTERVAL_IN_SECONDS: "15"
+      EUREKA_INSTANCE_LEASE_EXPIRATION_DURATION_IN_SECONDS: "45"
+      EUREKA_CLIENT_REGISTRY_FETCH_INTERVAL_SECONDS: "15"
+      JAVA_TOOL_OPTIONS: -XX:ActiveProcessorCount=2 -Xms256m -Xmx512m
+      SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE: "10"
+      SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE: "3"
     ports:
       - "127.0.0.1:8086:8086"
+    networks:
+      - optigrid-network
+
+  prediction-service:
+    build: ./prediction-service
+    container_name: prediction-service
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      eureka-service:
+        condition: service_started
+      simulation-service:
+        condition: service_started
+      etl-service:
+        condition: service_started
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/optigridza_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in backend/.env}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in backend/.env}
+      EUREKA_URI: http://eureka-service:8761/eureka/
+      EUREKA_INSTANCE_LEASE_RENEWAL_INTERVAL_IN_SECONDS: "15"
+      EUREKA_INSTANCE_LEASE_EXPIRATION_DURATION_IN_SECONDS: "45"
+      EUREKA_CLIENT_REGISTRY_FETCH_INTERVAL_SECONDS: "15"
+      JAVA_TOOL_OPTIONS: -XX:ActiveProcessorCount=2 -Xms512m -Xmx1024m
+      SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE: "15"
+      SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE: "5"
+    ports:
+      - "127.0.0.1:8084:8084"
     networks:
       - optigrid-network
 
@@ -160,18 +204,20 @@ services:
     container_name: api-gateway
     restart: unless-stopped
     depends_on:
-      - eureka-service
-      - auth-service
-      - company-service
-      - etl-service
-      - prediction-service
-      - simulation-service
-      - notification-service
+      eureka-service:
+        condition: service_started
+      auth-service:
+        condition: service_started
     environment:
       EUREKA_URI: http://eureka-service:8761/eureka/
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in backend/.env}
       CORS_ALLOWED_ORIGIN: ${CORS_ALLOWED_ORIGIN:-http://localhost:5173}
-      JAVA_TOOL_OPTIONS: -XX:ActiveProcessorCount=1 -Xms128m -Xmx512m
+      EUREKA_INSTANCE_LEASE_RENEWAL_INTERVAL_IN_SECONDS: "15"
+      EUREKA_INSTANCE_LEASE_EXPIRATION_DURATION_IN_SECONDS: "45"
+      EUREKA_CLIENT_REGISTRY_FETCH_INTERVAL_SECONDS: "15"
+      JAVA_TOOL_OPTIONS: -XX:ActiveProcessorCount=2 -Xms256m -Xmx512m
+      SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE: "20"
+      SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE: "5"
     ports:
       - "127.0.0.1:8080:8080"
     networks:

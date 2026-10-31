@@ -1,6 +1,7 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/authContextValue'
 import { useTheme } from '../context/themeContextValue'
+import { useCompanyScope } from '../context/companyScopeContextValue'
 import { toDisplayName, ROLE_LABELS } from '../utils/displayName'
 
 const NAV_ITEMS = [
@@ -16,6 +17,7 @@ const NAV_ITEMS = [
 export default function Layout() {
   const { user, logout } = useAuth()
   const { theme, toggle } = useTheme()
+  const { isAdmin, companies, activeCompanyId, selectCompany } = useCompanyScope()
   const navigate = useNavigate()
   const location = useLocation()
   const items = NAV_ITEMS.filter(i => !i.roles || i.roles.includes(user?.role))
@@ -63,6 +65,22 @@ export default function Layout() {
               <p className="text-xs text-base-content/60">Energy for SA business</p>
             </div>
           </div>
+
+
+          {isAdmin && (
+            <label className="form-control px-2 mb-2">
+              <span className="label-text text-xs mb-1">Viewing company</span>
+              <select
+                className="select select-bordered select-sm"
+                value={activeCompanyId ?? ''}
+                onChange={e => selectCompany(e.target.value)}
+                disabled={companies.length === 0}
+              >
+                {companies.length === 0 && <option value="">No companies yet</option>}
+                {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </label>
+          )}
 
           <ul className="menu w-full gap-1 flex-1">
             {items.map(item => (

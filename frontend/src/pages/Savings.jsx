@@ -1,22 +1,22 @@
 import { useEffect, useState } from 'react'
 import { Bar } from 'react-chartjs-2'
 import { Chart as ChartJS, BarElement, LinearScale, CategoryScale, Tooltip } from 'chart.js'
-import { useAuth } from '../context/authContextValue'
+import { useCompanyScope } from '../context/companyScopeContextValue'
 import { apiFetch } from '../services/api'
 
 ChartJS.register(BarElement, LinearScale, CategoryScale, Tooltip)
 
 export default function Savings() {
-  const { user } = useAuth()
+  const { activeCompanyId: companyId } = useCompanyScope()
   const [recommendation, setRecommendation] = useState(null)
   const [error, setError] = useState('')
 
   useEffect(() => {
-    if (!user?.companyId) return
-    apiFetch(`/api/v1/prediction/recommend/${user.companyId}`)
+    if (!companyId) return
+    apiFetch(`/api/v1/prediction/recommend/${companyId}`)
       .then(setRecommendation)
       .catch(() => setError('Could not load savings data.'))
-  }, [user])
+  }, [companyId])
 
   const daily = recommendation?.estimatedSavingsRand || 0
   const projected30 = daily * 30

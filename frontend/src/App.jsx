@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
 import { ThemeProvider } from './context/ThemeContext'
+import { CompanyScopeProvider } from './context/CompanyScopeContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import Layout from './components/Layout'
 import Login from './pages/Login'
@@ -16,6 +17,7 @@ import Tickets from './pages/Tickets'
 export default function App() {
   return (
     <AuthProvider>
+      <CompanyScopeProvider>
       <ThemeProvider>
         <BrowserRouter>
           <Routes>
@@ -34,6 +36,7 @@ export default function App() {
           </Routes>
         </BrowserRouter>
       </ThemeProvider>
+      </CompanyScopeProvider>
     </AuthProvider>
   )
 }

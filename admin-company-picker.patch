@@ -1,0 +1,297 @@
+diff --git a/frontend/src/App.jsx b/frontend/src/App.jsx
+index 2ea2c41..25b5ecb 100644
+--- a/frontend/src/App.jsx
++++ b/frontend/src/App.jsx
+@@ -1,6 +1,7 @@
+ import { BrowserRouter, Routes, Route } from 'react-router-dom'
+ import { AuthProvider } from './context/AuthContext'
+ import { ThemeProvider } from './context/ThemeContext'
++import { CompanyScopeProvider } from './context/CompanyScopeContext'
+ import ProtectedRoute from './components/ProtectedRoute'
+ import Layout from './components/Layout'
+ import Login from './pages/Login'
+@@ -16,6 +17,7 @@ import Tickets from './pages/Tickets'
+ export default function App() {
+   return (
+     <AuthProvider>
++      <CompanyScopeProvider>
+       <ThemeProvider>
+         <BrowserRouter>
+           <Routes>
+@@ -34,6 +36,7 @@ export default function App() {
+           </Routes>
+         </BrowserRouter>
+       </ThemeProvider>
++      </CompanyScopeProvider>
+     </AuthProvider>
+   )
+ }
+\ No newline at end of file
+diff --git a/frontend/src/components/Layout.jsx b/frontend/src/components/Layout.jsx
+index 2b4141c..e28f84b 100644
+--- a/frontend/src/components/Layout.jsx
++++ b/frontend/src/components/Layout.jsx
+@@ -1,6 +1,7 @@
+ import { Outlet, useNavigate, useLocation } from 'react-router-dom'
+ import { useAuth } from '../context/authContextValue'
+ import { useTheme } from '../context/themeContextValue'
++import { useCompanyScope } from '../context/companyScopeContextValue'
+ import { toDisplayName, ROLE_LABELS } from '../utils/displayName'
+ 
+ const NAV_ITEMS = [
+@@ -16,6 +17,7 @@ const NAV_ITEMS = [
+ export default function Layout() {
+   const { user, logout } = useAuth()
+   const { theme, toggle } = useTheme()
++  const { isAdmin, companies, activeCompanyId, selectCompany } = useCompanyScope()
+   const navigate = useNavigate()
+   const location = useLocation()
+   const items = NAV_ITEMS.filter(i => !i.roles || i.roles.includes(user?.role))
+@@ -64,6 +66,22 @@ export default function Layout() {
+             </div>
+           </div>
+ 
++
++          {isAdmin && (
++            <label className="form-control px-2 mb-2">
++              <span className="label-text text-xs mb-1">Viewing company</span>
++              <select
++                className="select select-bordered select-sm"
++                value={activeCompanyId ?? ''}
++                onChange={e => selectCompany(e.target.value)}
++                disabled={companies.length === 0}
++              >
++                {companies.length === 0 && <option value="">No companies yet</option>}
++                {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
++              </select>
++            </label>
++          )}
++
+           <ul className="menu w-full gap-1 flex-1">
+             {items.map(item => (
+               <li key={item.path}>
+diff --git a/frontend/src/context/CompanyScopeContext.jsx b/frontend/src/context/CompanyScopeContext.jsx
+new file mode 100644
+index 0000000..a7d6120
+--- /dev/null
++++ b/frontend/src/context/CompanyScopeContext.jsx
+@@ -0,0 +1,43 @@
++import { useEffect, useMemo, useState } from 'react'
++import { useAuth } from './authContextValue'
++import { apiFetch } from '../services/api'
++import { CompanyScopeContext } from './companyScopeContextValue'
++
++const STORAGE_KEY = 'optigrid.adminCompanyId'
++
++/**
++ * Which company's data the pages should show.
++ * - Company users: always their own companyId (from the JWT / /auth/me).
++ * - System administrators have no companyId, so they pick one company to inspect.
++ */
++export function CompanyScopeProvider({ children }) {
++  const { user } = useAuth()
++  const isAdmin = user?.role === 'SYSTEM_ADMIN'
++  const [companies, setCompanies] = useState([])
++  const [selectedId, setSelectedId] = useState(() => sessionStorage.getItem(STORAGE_KEY) || '')
++
++  useEffect(() => {
++    if (!isAdmin) return undefined
++    let active = true
++    apiFetch('/api/v1/companies')
++      .then(list => { if (active) setCompanies(list.filter(c => c.active !== false)) })
++      .catch(() => { if (active) setCompanies([]) })
++    return () => { active = false }
++  }, [isAdmin])
++
++  const activeCompanyId = isAdmin
++    ? (companies.some(c => c.id === selectedId) ? selectedId : (companies[0]?.id ?? null))
++    : (user?.companyId ?? null)
++
++  const selectCompany = (id) => {
++    setSelectedId(id)
++    sessionStorage.setItem(STORAGE_KEY, id)
++  }
++
++  const value = useMemo(
++    () => ({ isAdmin, companies, activeCompanyId, selectCompany }),
++    [isAdmin, companies, activeCompanyId],
++  )
++
++  return <CompanyScopeContext.Provider value={value}>{children}</CompanyScopeContext.Provider>
++}
+diff --git a/frontend/src/context/companyScopeContextValue.js b/frontend/src/context/companyScopeContextValue.js
+new file mode 100644
+index 0000000..7c25223
+--- /dev/null
++++ b/frontend/src/context/companyScopeContextValue.js
+@@ -0,0 +1,4 @@
++import { createContext, useContext } from 'react'
++
++export const CompanyScopeContext = createContext(null)
++export const useCompanyScope = () => useContext(CompanyScopeContext)
+diff --git a/frontend/src/pages/Alerts.jsx b/frontend/src/pages/Alerts.jsx
+index e61cfc7..c53452b 100644
+--- a/frontend/src/pages/Alerts.jsx
++++ b/frontend/src/pages/Alerts.jsx
+@@ -1,22 +1,22 @@
+ import { useEffect, useState } from 'react'
+-import { useAuth } from '../context/authContextValue'
++import { useCompanyScope } from '../context/companyScopeContextValue'
+ import { apiFetch } from '../services/api'
+ 
+ const sevBadge = { INFO: 'badge-info', WARNING: 'badge-warning', CRITICAL: 'badge-error' }
+ 
+ export default function Alerts() {
+-  const { user } = useAuth()
++  const { activeCompanyId: companyId } = useCompanyScope()
+   const [alerts, setAlerts] = useState([])
+   const [error, setError] = useState('')
+ 
+   const load = () => {
+-    if (!user?.companyId) return
+-    apiFetch(`/api/v1/notifications/alerts/${user.companyId}`)
++    if (!companyId) return
++    apiFetch(`/api/v1/notifications/alerts/${companyId}`)
+       .then(setAlerts)
+       .catch(() => setError('Could not load alerts.'))
+   }
+ 
+-  useEffect(load, [user])
++  useEffect(load, [companyId])
+ 
+   const acknowledge = async (id) => {
+     try {
+diff --git a/frontend/src/pages/BatteryHealth.jsx b/frontend/src/pages/BatteryHealth.jsx
+index 49c3a1e..ca99190 100644
+--- a/frontend/src/pages/BatteryHealth.jsx
++++ b/frontend/src/pages/BatteryHealth.jsx
+@@ -1,20 +1,20 @@
+ import { useEffect, useState } from 'react'
+-import { useAuth } from '../context/authContextValue'
++import { useCompanyScope } from '../context/companyScopeContextValue'
+ import { apiFetch } from '../services/api'
+ 
+ const healthBadge = { GOOD: 'badge-success', WARNING: 'badge-warning', CRITICAL: 'badge-error' }
+ 
+ export default function BatteryHealth() {
+-  const { user } = useAuth()
++  const { activeCompanyId: companyId } = useCompanyScope()
+   const [battery, setBattery] = useState(null)
+   const [error, setError] = useState('')
+ 
+   useEffect(() => {
+-    if (!user?.companyId) return
+-    apiFetch(`/api/v1/simulation/battery/health/${user.companyId}`)
++    if (!companyId) return
++    apiFetch(`/api/v1/simulation/battery/health/${companyId}`)
+       .then(setBattery)
+       .catch(() => setError('Could not load battery data.'))
+-  }, [user])
++  }, [companyId])
+ 
+   return (
+     <div>
+diff --git a/frontend/src/pages/History.jsx b/frontend/src/pages/History.jsx
+index 6486750..8d5c7c9 100644
+--- a/frontend/src/pages/History.jsx
++++ b/frontend/src/pages/History.jsx
+@@ -1,7 +1,7 @@
+ import { useEffect, useState } from 'react'
+ import { Line } from 'react-chartjs-2'
+ import { Chart as ChartJS, LineElement, PointElement, LinearScale, CategoryScale, Tooltip, Filler, Legend } from 'chart.js'
+-import { useAuth } from '../context/authContextValue'
++import { useCompanyScope } from '../context/companyScopeContextValue'
+ import { apiFetch } from '../services/api'
+ 
+ ChartJS.register(LineElement, PointElement, LinearScale, CategoryScale, Tooltip, Filler, Legend)
+@@ -85,18 +85,18 @@ function downloadPDF(records, companyName) {
+ const actionColor = { CHARGE: '#1E7A6B', DISCHARGE: '#C0341B', HOLD: '#F2610C', SOLAR_PRIORITY: '#EAB308' }
+ 
+ export default function History() {
+-  const { user } = useAuth()
++  const { activeCompanyId: companyId } = useCompanyScope()
+   const [records, setRecords] = useState([])
+   const [loading, setLoading] = useState(true)
+   const [error, setError] = useState('')
+ 
+   useEffect(() => {
+-    if (!user?.companyId) return
+-    apiFetch(`/api/v1/prediction/history/${user.companyId}`)
++    if (!companyId) return
++    apiFetch(`/api/v1/prediction/history/${companyId}`)
+       .then(data => { setRecords(data); setError('') })
+       .catch(() => setError('Could not load prediction history.'))
+       .finally(() => setLoading(false))
+-  }, [user])
++  }, [companyId])
+ 
+   const totalSavings = records.reduce((s, r) => s + r.estimatedSavingsRand, 0)
+   const avgConfidence = records.length ? records.reduce((s, r) => s + r.confidence, 0) / records.length : 0
+diff --git a/frontend/src/pages/Savings.jsx b/frontend/src/pages/Savings.jsx
+index 26b3a6d..f44be4d 100644
+--- a/frontend/src/pages/Savings.jsx
++++ b/frontend/src/pages/Savings.jsx
+@@ -1,22 +1,22 @@
+ import { useEffect, useState } from 'react'
+ import { Bar } from 'react-chartjs-2'
+ import { Chart as ChartJS, BarElement, LinearScale, CategoryScale, Tooltip } from 'chart.js'
+-import { useAuth } from '../context/authContextValue'
++import { useCompanyScope } from '../context/companyScopeContextValue'
+ import { apiFetch } from '../services/api'
+ 
+ ChartJS.register(BarElement, LinearScale, CategoryScale, Tooltip)
+ 
+ export default function Savings() {
+-  const { user } = useAuth()
++  const { activeCompanyId: companyId } = useCompanyScope()
+   const [recommendation, setRecommendation] = useState(null)
+   const [error, setError] = useState('')
+ 
+   useEffect(() => {
+-    if (!user?.companyId) return
+-    apiFetch(`/api/v1/prediction/recommend/${user.companyId}`)
++    if (!companyId) return
++    apiFetch(`/api/v1/prediction/recommend/${companyId}`)
+       .then(setRecommendation)
+       .catch(() => setError('Could not load savings data.'))
+-  }, [user])
++  }, [companyId])
+ 
+   const daily = recommendation?.estimatedSavingsRand || 0
+   const projected30 = daily * 30
+diff --git a/frontend/src/pages/Tickets.jsx b/frontend/src/pages/Tickets.jsx
+index 039ddfe..f4ce767 100644
+--- a/frontend/src/pages/Tickets.jsx
++++ b/frontend/src/pages/Tickets.jsx
+@@ -1,5 +1,6 @@
+ import { useCallback, useEffect, useState } from 'react'
+ import { useAuth } from '../context/authContextValue'
++import { useCompanyScope } from '../context/companyScopeContextValue'
+ import { apiFetch } from '../services/api'
+ 
+ const priorityBadge = {
+@@ -18,6 +19,7 @@ const statusBadge = {
+ 
+ export default function Tickets() {
+   const { user } = useAuth()
++  const { activeCompanyId: companyId } = useCompanyScope()
+   const [tickets, setTickets] = useState([])
+   const [filter, setFilter] = useState('ALL')
+   const [loading, setLoading] = useState(true)
+@@ -25,13 +27,13 @@ export default function Tickets() {
+   const [updating, setUpdating] = useState(null)
+ 
+   const fetchTickets = useCallback(() => {
+-    if (!user?.companyId) return
++    if (!companyId) return
+     setLoading(true)
+-    apiFetch(`/api/v1/tickets/company/${user.companyId}`)
++    apiFetch(`/api/v1/tickets/company/${companyId}`)
+       .then(data => { setTickets(data); setError('') })
+       .catch(() => setError('Could not load tickets.'))
+       .finally(() => setLoading(false))
+-  }, [user])
++  }, [companyId])
+ 
+   useEffect(() => {
+     const initialFetch = setTimeout(fetchTickets, 0)

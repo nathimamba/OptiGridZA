@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '../context/authContextValue'
+import { useCompanyScope } from '../context/companyScopeContextValue'
 import { apiFetch } from '../services/api'
 
 const priorityBadge = {
@@ -18,6 +19,7 @@ const statusBadge = {
 
 export default function Tickets() {
   const { user } = useAuth()
+  const { activeCompanyId: companyId } = useCompanyScope()
   const [tickets, setTickets] = useState([])
   const [filter, setFilter] = useState('ALL')
   const [loading, setLoading] = useState(true)
@@ -25,13 +27,13 @@ export default function Tickets() {
   const [updating, setUpdating] = useState(null)
 
   const fetchTickets = useCallback(() => {
-    if (!user?.companyId) return
+    if (!companyId) return
     setLoading(true)
-    apiFetch(`/api/v1/tickets/company/${user.companyId}`)
+    apiFetch(`/api/v1/tickets/company/${companyId}`)
       .then(data => { setTickets(data); setError('') })
       .catch(() => setError('Could not load tickets.'))
       .finally(() => setLoading(false))
-  }, [user])
+  }, [companyId])
 
   useEffect(() => {
     const initialFetch = setTimeout(fetchTickets, 0)

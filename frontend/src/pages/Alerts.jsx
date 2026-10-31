@@ -1,22 +1,22 @@
 import { useEffect, useState } from 'react'
-import { useAuth } from '../context/authContextValue'
+import { useCompanyScope } from '../context/companyScopeContextValue'
 import { apiFetch } from '../services/api'
 
 const sevBadge = { INFO: 'badge-info', WARNING: 'badge-warning', CRITICAL: 'badge-error' }
 
 export default function Alerts() {
-  const { user } = useAuth()
+  const { activeCompanyId: companyId } = useCompanyScope()
   const [alerts, setAlerts] = useState([])
   const [error, setError] = useState('')
 
   const load = () => {
-    if (!user?.companyId) return
-    apiFetch(`/api/v1/notifications/alerts/${user.companyId}`)
+    if (!companyId) return
+    apiFetch(`/api/v1/notifications/alerts/${companyId}`)
       .then(setAlerts)
       .catch(() => setError('Could not load alerts.'))
   }
 
-  useEffect(load, [user])
+  useEffect(load, [companyId])
 
   const acknowledge = async (id) => {
     try {
