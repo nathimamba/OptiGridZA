@@ -89,16 +89,17 @@ public class EskomService {
      * This provides accurate live data when the EskomSePush API is unavailable.
      */
     private GridStatus saveCurrentStatus() {
-        // check if we have recent data in the database first
+        // Preserve the latest known value but record each explicit fetch attempt.
         var latest = gridStatusRepository.findTopByOrderByFetchedAtDesc();
         if (latest.isPresent()) {
             GridStatus existing = latest.get();
-            // if data is less than 2 hours old, reuse it
-            if (existing.getFetchedAt() != null
-                    && existing.getFetchedAt().isAfter(java.time.LocalDateTime.now().minusHours(2))) {
-                log.info("Using recent grid status from DB: stage={}", existing.getLoadSheddingStage());
-                return existing;
-            }
+            return gridStatusRepository.save(GridStatus.builder()
+                    .loadSheddingStage(existing.getLoadSheddingStage())
+                    .outageProbability(existing.getOutageProbability())
+                    .areaName(existing.getAreaName())
+                    .nextOutageStart(existing.getNextOutageStart())
+                    .nextOutageEnd(existing.getNextOutageEnd())
+                    .build());
         }
 
         // save current status — stage 0 (no load shedding) is the accurate live status

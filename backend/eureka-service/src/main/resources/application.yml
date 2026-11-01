@@ -7,10 +7,10 @@ spring:
 
 eureka:
   client:
-    register-with-uereka: false
+    register-with-eureka: false
     fetch-registry: false
   server:
     enable-self-preservation: false
-    wait-time0in-ms-when-sync-empty: 0
-    com.netflix.uereka: WARN
+    wait-time-in-ms-when-sync-empty: 0
+    com.netflix.eureka: WARN
     com.netflix.discovery: WARN

@@ -2,6 +2,7 @@ package com.optigridza.simulationservice.controller;
 
 import com.optigridza.simulationservice.dto.BatteryHealthResponse;
 import com.optigridza.simulationservice.dto.SimulationRunRequest;
+import jakarta.validation.Valid;
 import com.optigridza.simulationservice.dto.SocResponse;
 import com.optigridza.simulationservice.model.VirtualBattery;
 import com.optigridza.simulationservice.repository.VirtualBatteryRepository;
@@ -17,6 +18,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Objects;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1/simulation")
@@ -39,7 +41,7 @@ public class SimulationController {
     public ResponseEntity<SocResponse> getSoc(@PathVariable String companyId, Authentication auth) {
         requireTenant(companyId, auth);
         VirtualBattery battery = virtualBatteryRepository.findByCompanyId(companyId)
-                .orElseThrow(() -> new RuntimeException("No battery found for company " + companyId));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No battery found for company " + companyId));
         return ResponseEntity.ok(SocResponse.builder()
                 .soc(battery.getCurrentSoc())
                 .capacityKwh(battery.getCapacityKwh())
@@ -59,7 +61,7 @@ public class SimulationController {
                     VirtualBattery battery = VirtualBattery.builder()
                             .companyId(companyId)
                             .capacityKwh(10.0)
-                            .currentSoc(50.0)
+                            .currentSoc(100.0)
                             .cycleCount(0)
                             .efficiencyPct(100.0)
                             .mode("HYBRID")
@@ -71,7 +73,7 @@ public class SimulationController {
 
     @PostMapping("/run")
     @PreAuthorize("hasAnyRole('ENERGY_MANAGER','SYSTEM_ADMIN')")
-    public ResponseEntity<VirtualBattery> runSimulation(@RequestBody SimulationRunRequest request,
+    public ResponseEntity<VirtualBattery> runSimulation(@Valid @RequestBody SimulationRunRequest request,
                                                         Authentication auth) {
         requireTenant(request.getCompanyId(), auth);
         VirtualBattery updated = simulationService.applySimulation(
