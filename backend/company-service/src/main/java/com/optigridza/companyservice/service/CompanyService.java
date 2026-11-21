@@ -1,5 +1,5 @@
 package com.optigridza.companyservice.service;
-
+import java.util.HashMap;
 import com.optigridza.companyservice.client.AuthServiceClient;
 import com.optigridza.companyservice.client.SimulationServiceClient;
 import com.optigridza.companyservice.dto.AssignUserRequest;
@@ -13,7 +13,7 @@ import com.optigridza.companyservice.repository.CompanyUserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-
+import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Map;
 
@@ -93,6 +93,7 @@ public class CompanyService {
         return toCompanyResponse(company, "Company deactivated");
     }
 
+    @Transactional
     public CompanyUserResponse assignUser(
             String companyId, AssignUserRequest request) {
 
@@ -101,29 +102,35 @@ public class CompanyService {
                 .orElseThrow(() -> new RuntimeException(
                         "Company not found: " + companyId));
 
-        if (companyUserRepository.existsByEmailAndCompanyId(
-                request.getEmail(), companyId)) {
-            throw new RuntimeException(
-                    request.getEmail() + " already assigned to this company");
-        }
-
         if ("SYSTEM_ADMIN".equals(request.getRole())) {
             throw new RuntimeException(
                     "SYSTEM_ADMIN cannot be assigned to a company");
         }
 
-        CompanyUser cu = CompanyUser.builder()
-                .email(request.getEmail())
-                .companyId(companyId)
-                .role(request.getRole())
-                .active(true)
-                .build();
+        CompanyUser cu = companyUserRepository
+                .findByEmailAndCompanyId(request.getEmail(), companyId)
+                .orElse(null);
+
+        if (cu != null && cu.isActive()) {
+            throw new RuntimeException(
+                    request.getEmail() + " already assigned to this company");
+        }
+        if (cu == null) {
+            cu = CompanyUser.builder()
+                    .email(request.getEmail())
+                    .companyId(companyId)
+                    .build();
+        }
+        // a previously removed member is re-activated instead of hitting the unique constraint
+        cu.setRole(request.getRole());
+        cu.setActive(true);
 
         CompanyUser saved = companyUserRepository.save(cu);
 
-        authServiceClient.updateUserCompany(request.getEmail(), Map.of("companyId", companyId));
+        // If this call fails the transaction rolls back, so no half-assigned member is left behind.
+        authServiceClient.updateUserCompany(request.getEmail(), companyBody(companyId));
 
-        log.info("User {} → company {} as {}",
+        log.info("User {} -> company {} as {}",
                 saved.getEmail(), companyId, saved.getRole());
 
         return toUserResponse(saved, company.getName(),
@@ -135,12 +142,13 @@ public class CompanyService {
                 .findByIdAndActiveTrue(companyId)
                 .orElseThrow(() -> new RuntimeException(
                         "Company not found: " + companyId));
-        return companyUserRepository.findAllByCompanyId(companyId)
+        return companyUserRepository.findAllByCompanyIdAndActiveTrue(companyId)
                 .stream()
                 .map(cu -> toUserResponse(cu, company.getName(), null))
                 .toList();
     }
 
+    @Transactional
     public CompanyUserResponse removeUser(
             String companyId, String userEmail) {
         Company company = companyRepository
@@ -153,7 +161,20 @@ public class CompanyService {
                         userEmail + " not found in this company"));
         cu.setActive(false);
         companyUserRepository.save(cu);
+
+        // detach the account from the company so its next login no longer carries this companyId
+        try {
+            authServiceClient.updateUserCompany(userEmail, companyBody(null));
+        } catch (Exception e) {
+            log.warn("Could not detach {} from company in auth-service: {}", userEmail, e.getMessage());
+        }
         return toUserResponse(cu, company.getName(), "User removed");
+    }
+
+    private Map<String, String> companyBody(String companyId) {
+        Map<String, String> body = new HashMap<>();
+        body.put("companyId", companyId == null ? "" : companyId);
+        return body;
     }
 
 

@@ -18,7 +18,6 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Objects;
-import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1/simulation")
@@ -28,7 +27,6 @@ public class SimulationController {
     private final VirtualBatteryRepository virtualBatteryRepository;
     private final BatterySimulationService simulationService;
 
-    /** Non-admins may only touch their own company (companyId claim is stored as credentials). */
     private void requireTenant(String companyId, Authentication auth) {
         boolean admin = auth.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_SYSTEM_ADMIN"));
@@ -76,9 +74,34 @@ public class SimulationController {
     public ResponseEntity<VirtualBattery> runSimulation(@Valid @RequestBody SimulationRunRequest request,
                                                         Authentication auth) {
         requireTenant(request.getCompanyId(), auth);
+        validateRun(request);
         VirtualBattery updated = simulationService.applySimulation(
                 request.getCompanyId(), request.getAction(), request.getKwh(), request.getMode());
         return ResponseEntity.ok(updated);
+    }
+
+    private static final java.util.Set<String> ACTIONS =
+            java.util.Set.of("CHARGE", "DISCHARGE", "HOLD", "SOLAR_PRIORITY");
+    private static final java.util.Set<String> MODES =
+            java.util.Set.of("GRID", "HYBRID", "OFF_GRID");
+
+    
+    private void validateRun(SimulationRunRequest r) {
+        if (r.getCompanyId() == null || r.getCompanyId().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "companyId is required");
+        }
+        if (r.getAction() == null || !ACTIONS.contains(r.getAction())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "action must be one of " + ACTIONS);
+        }
+        if (r.getMode() == null || !MODES.contains(r.getMode())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "mode must be one of " + MODES);
+        }
+        if (Double.isNaN(r.getKwh()) || r.getKwh() < 0 || r.getKwh() > 100000) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "kwh must be between 0 and 100000");
+        }
     }
 
     @GetMapping("/battery/health/{companyId}")
@@ -89,7 +112,7 @@ public class SimulationController {
         VirtualBattery battery = virtualBatteryRepository.findByCompanyId(companyId)
                 .orElseThrow(() -> new RuntimeException("No battery found for company " + companyId));
 
-        return ResponseEntity.ok(BatteryHealthResponse.builder()
+               return ResponseEntity.ok(BatteryHealthResponse.builder()
                 .soc(battery.getCurrentSoc())
                 .cycleCount(battery.getCycleCount())
                 .efficiencyPct(battery.getEfficiencyPct())

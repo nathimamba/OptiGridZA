@@ -48,7 +48,7 @@ export default function Companies() {
   const load = () => {
     apiFetch('/api/v1/companies')
       .then(setCompanies)
-      .catch(() => setError('Could not load companies.'))
+      .catch(err => setError(`Could not load companies: ${err.message}`))
   }
   useEffect(load, [])
 
@@ -113,8 +113,8 @@ export default function Companies() {
     try {
       await apiFetch(`/api/v1/companies/${id}/deactivate`, { method: 'PUT' })
       load()
-    } catch {
-      setError('Could not deactivate company.')
+    } catch (err) {
+      setError(`Could not deactivate company: ${err.message}`)
     }
   }
 
@@ -123,15 +123,20 @@ export default function Companies() {
     setUserError('')
     try {
       const users = await apiFetch(`/api/v1/companies/${company.id}/users`)
-      setCompanyUsers(users)
-    } catch {
-      setUserError('Could not load users for this company.')
+      setCompanyUsers(users ?? [])
+    } catch (err) {
+      setCompanyUsers([])
+      setUserError(`Could not load users for this company: ${err.message}`)
     }
   }
 
   const assignUser = async (e) => {
     e.preventDefault()
     setUserError('')
+    if (userForm.password.length < 12) {
+      setUserError('Password must be at least 12 characters, with upper-case, lower-case, a digit and a symbol.')
+      return
+    }
     setUserSaving(true)
     try {
       try {
@@ -146,7 +151,7 @@ export default function Companies() {
           }),
         })
       } catch (regErr) {
-        if (!regErr.message.includes('already')) throw regErr
+        if (regErr.status !== 409 && !/already/i.test(regErr.message)) throw regErr
       }
 
       await apiFetch(`/api/v1/companies/${selectedCompany.id}/users`, {
@@ -156,8 +161,8 @@ export default function Companies() {
 
       setUserForm({ firstName: '', lastName: '', email: '', password: '', role: 'ENERGY_MANAGER' })
       openUsers(selectedCompany)
-    } catch {
-      setUserError('Could not register/assign user — check the details and try again.')
+    } catch (err) {
+      setUserError(err.message || 'Could not register/assign user — check the details and try again.')
     } finally {
       setUserSaving(false)
     }
@@ -165,10 +170,10 @@ export default function Companies() {
 
   const removeUser = async (email) => {
     try {
-      await apiFetch(`/api/v1/companies/${selectedCompany.id}/users/${email}`, { method: 'DELETE' })
+      await apiFetch(`/api/v1/companies/${selectedCompany.id}/users/${encodeURIComponent(email)}`, { method: 'DELETE' })
       openUsers(selectedCompany)
-    } catch {
-      setUserError('Could not remove user.')
+    } catch (err) {
+      setUserError(`Could not remove user: ${err.message}`)
     }
   }
 
@@ -232,7 +237,7 @@ export default function Companies() {
           </table>
         </div>
       </div>
-
+      
       {showModal && (
         <div className="modal modal-open">
           <div className="modal-box">
@@ -328,7 +333,8 @@ export default function Companies() {
               <input
                 type="password"
                 className="input input-bordered input-sm w-full"
-                placeholder="temporary password"
+                placeholder="temporary password (12+ chars, Aa1!)"
+                minLength={12}
                 value={userForm.password}
                 onChange={e => setUserForm({ ...userForm, password: e.target.value })}
                 required
@@ -358,4 +364,5 @@ export default function Companies() {
       )}
     </div>
   )
-}
+}        
+     

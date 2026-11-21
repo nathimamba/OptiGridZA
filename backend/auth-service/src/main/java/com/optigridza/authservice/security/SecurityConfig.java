@@ -38,8 +38,8 @@ public class SecurityConfig {
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(REGISTER_ENDPOINT, LOGIN_ENDPOINT, "/actuator/health", "/error").permitAll()
-                        .requestMatchers(HttpMethod.PATCH, "/api/v1/auth/users/*/company").hasRole("SYSTEM_ADMIN")
+                        .requestMatchers(REGISTER_ENDPOINT, LOGIN_ENDPOINT, "/error", "/actuator/health").permitAll()
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/auth/users/*/company").hasRole("SYSTEM_ADMIN")
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider)

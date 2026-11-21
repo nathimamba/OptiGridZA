@@ -37,7 +37,6 @@ public class BatterySimulationService {
         double newSoc = calculateNewSoc(battery.getCurrentSoc(), action, kwh, battery.getCapacityKwh());
         String healthStatus = getHealthStatus(newSoc);
 
-        // Alert + Ticket for LOW SOC
         if (newSoc < 20.0) {
             AlertRequest alertRequest = new AlertRequest();
             alertRequest.setCompanyId(companyId);
@@ -45,7 +44,7 @@ public class BatterySimulationService {
             alertRequest.setSeverity("CRITICAL");
             alertRequest.setTargetRole("TECHNICIAN");
             alertRequest.setMessage("Battery SOC dropped below 20% (" + String.format("%.1f", newSoc) + "%)");
-            notificationServiceClient.createAlert(alertRequest);
+            sendAlert(alertRequest);
 
             createTicketForIssue(companyId, "LOW_SOC", "CRITICAL",
                     "Critical: Battery SOC at " + String.format("%.1f", newSoc) + "%",
@@ -86,7 +85,7 @@ public class BatterySimulationService {
             alertRequest.setSeverity("CRITICAL");
             alertRequest.setTargetRole("TECHNICIAN");
             alertRequest.setMessage("Battery efficiency critically low: " + String.format("%.1f", newEfficiency) + "%");
-            notificationServiceClient.createAlert(alertRequest);
+            sendAlert(alertRequest);
 
             createTicketForIssue(companyId, "BATTERY_DEGRADATION", "CRITICAL",
                     "Critical: Battery efficiency below 70%",
@@ -104,6 +103,15 @@ public class BatterySimulationService {
         return repository.save(battery);
     }
 
+    private void sendAlert(AlertRequest alertRequest) {
+        try {
+            notificationServiceClient.createAlert(alertRequest);
+            log.info("Alert created for company {}: {}", alertRequest.getCompanyId(), alertRequest.getMessage());
+        } catch (Exception e) {
+            log.error("Failed to create alert for company {}: {}", alertRequest.getCompanyId(), e.toString());
+        }
+    }
+
     private void createTicketForIssue(String companyId, String ticketType, String priority,
                                       String title, String description, double soc, String health) {
         try {
@@ -119,7 +127,7 @@ public class BatterySimulationService {
             notificationServiceClient.createTicket(ticket);
             log.info("Ticket created for company {}: {}", companyId, title);
         } catch (Exception e) {
-            log.warn("Failed to create ticket for company {}: {}", companyId, e.getMessage());
+            log.error("Failed to create ticket for company {}: {}", companyId, e.toString());
         }
     }
 

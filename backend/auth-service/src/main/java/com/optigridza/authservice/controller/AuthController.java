@@ -69,7 +69,7 @@ public class AuthController {
         return ResponseEntity.noContent().header(HttpHeaders.SET_COOKIE, cookie.toString()).build();
     }
 
-    @PatchMapping("/users/{email}/company")
+    @PutMapping("/users/{email}/company")
     public ResponseEntity<Void> updateUserCompany(@PathVariable String email,
                                                   @RequestBody Map<String, String> body){
         authService.updateUserCompany(email, body.get("companyId"));

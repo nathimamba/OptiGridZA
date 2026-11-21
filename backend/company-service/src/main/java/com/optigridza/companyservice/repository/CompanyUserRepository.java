@@ -9,6 +9,8 @@ import java.util.Optional;
 public interface CompanyUserRepository extends JpaRepository<CompanyUser, String> {
     List<CompanyUser> findAllByCompanyId(String companyId);
 
+    List<CompanyUser> findAllByCompanyIdAndActiveTrue(String companyId);
+
     boolean existsByEmailAndCompanyId(String email, String companyId);
 
     Optional<CompanyUser> findByEmailAndCompanyId(

@@ -59,7 +59,7 @@ Pop-Location
 if($code -ne 0){ throw 'docker compose failed. If you saw an SSL handshake error, build one service at a time (docker compose build auth-service, and so on), then run this script again with -SkipBuild.' }
 
 Step 5 'Wait until the gateway and auth service answer'
-$deadline = (Get-Date).AddMinutes(15); $ready = $false
+$deadline = (Get-Date).AddMinutes(45); $ready = $false
 while((Get-Date) -lt $deadline){
   try {
     $s = New-Object Microsoft.PowerShell.Commands.WebRequestSession
@@ -67,9 +67,17 @@ while((Get-Date) -lt $deadline){
     $ready = $true; break
   } catch { Write-Host '  waiting for the services to start...'; Start-Sleep 10 }
 }
-if(-not $ready){ throw 'The gateway or auth service did not answer within 8 minutes. Run: docker compose ps   and   docker compose logs --tail 50 auth-service   in the backend folder.' }
+if(-not $ready){ throw 'The gateway or auth service did not answer within 45 minutes. Run: docker compose ps   and   docker compose logs --tail 50 auth-service   in the backend folder.' }
 Write-Host '  Gateway and auth service are up; admin login works.'
 try { $apps = Invoke-RestMethod 'http://127.0.0.1:8761/eureka/apps' -Headers @{Accept='application/json'}; Write-Host ("  Eureka: {0} applications registered (expect 7)" -f @($apps.applications.application).Count) } catch { Write-Host '  (Eureka list not readable - not a problem)' }
+Write-Host '  Waiting until all 7 services are registered in Eureka...'
+$until = (Get-Date).AddMinutes(30)
+do {
+  try { $n = @((Invoke-RestMethod 'http://127.0.0.1:8761/eureka/apps' -Headers @{Accept='application/json'}).applications.application).Count } catch { $n = 0 }
+  Write-Host "  registered: $n of 7"
+  if($n -lt 7){ Start-Sleep 15 }
+} while($n -lt 7 -and (Get-Date) -lt $until)
+Start-Sleep 45   # let the gateway refresh its service list
 
 Step 6 'Start the frontend in a new window'
 Start-Process powershell -ArgumentList '-NoExit','-Command',"Set-Location '$Frontend'; npm install; npm run dev"

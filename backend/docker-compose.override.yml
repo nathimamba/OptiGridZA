@@ -1,0 +1,21 @@
+x-light: &light
+  JAVA_TOOL_OPTIONS: -XX:ActiveProcessorCount=1 -Xms64m -Xmx256m -XX:+UseSerialGC -XX:TieredStopAtLevel=1 -Xss512k
+
+services:
+  eureka-service:
+    environment: *light
+  auth-service:
+    environment: *light
+  api-gateway:
+    environment: *light
+  company-service:
+    environment: *light
+  etl-service:
+    environment: *light
+  simulation-service:
+    environment: *light
+  notification-service:
+    environment: *light
+  prediction-service:
+    environment:
+      JAVA_TOOL_OPTIONS: -XX:ActiveProcessorCount=1 -Xms64m -Xmx384m -XX:+UseSerialGC -XX:TieredStopAtLevel=1 -Xss512k

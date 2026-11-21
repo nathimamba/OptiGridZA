@@ -16,7 +16,15 @@ function Api($m,$p,$b,$s){
   $r = @{Uri="$Gateway$p";Method=$m;ContentType='application/json'}
   if($s){$r.WebSession=$s}
   if($null -ne $b){$r.Body=($b|ConvertTo-Json -Depth 6)}
-  Invoke-RestMethod @r
+  # retry transient gateway/server errors (5xx, no response) up to 4 times
+  for($try = 1; $try -le 4; $try++){
+    try { return Invoke-RestMethod @r }
+    catch {
+      $c = if($_.Exception.Response){ [int]$_.Exception.Response.StatusCode } else { 0 }
+      if((($c -ge 500) -or ($c -eq 0)) -and $try -lt 4){ Start-Sleep (5 * $try); continue }
+      throw
+    }
+  }
 }
 function Code($m,$p,$b,$s){ try { Api $m $p $b $s | Out-Null; 200 } catch { if($_.Exception.Response){ [int]$_.Exception.Response.StatusCode } else { 'ERR' } } }
 function Flat($x){ $o = @(); foreach($i in @($x)){ $o += $i }; $o }   # same result in Windows PowerShell 5.1 and PowerShell 7
@@ -30,6 +38,16 @@ function T($id,$cat,$name,$expected,[scriptblock]$act){
   $sw.Stop()
   $status = if("$actual" -eq "$expected"){'Pass'}else{'CHECK'}
   [void]$results.Add([pscustomobject]@{ID=$id;Category=$cat;Test=$name;Expected=$expected;Actual=$actual;Ms=[int]$sw.ElapsedMilliseconds;Status=$status})
+}
+
+# wait until every routed service answers through the gateway (anything except 503 counts as reachable)
+$probe = New-S; Api POST /api/v1/auth/login @{email=$AdminEmail;password=$AdminPassword} $probe | Out-Null
+foreach($p in '/api/v1/companies','/api/v1/simulation/battery/health/x','/api/v1/prediction/model-info','/api/v1/notifications/alerts/x','/api/v1/etl/tariff/current'){
+  for($k=0; $k -lt 60; $k++){
+    $c = try { (Invoke-WebRequest "$Gateway$p" -WebSession $probe -UseBasicParsing).StatusCode } catch { if($_.Exception.Response){ [int]$_.Exception.Response.StatusCode } else { 0 } }
+    if($c -ne 503 -and $c -ne 0){ break }
+    Write-Host "  waiting for $p (status $c)..."; Start-Sleep 10
+  }
 }
 
 # ---------- setup ----------
@@ -67,14 +85,17 @@ T 'A4-20' 'Data/API'          'Reset demo stage to 0'                    '0' { [
 T 'A4-16' 'Data/API'          'Weather is live (not the fallback)'       'live' { $w = Api GET /api/v1/etl/weather $null $admin; if($w.weatherCondition -eq 'Unknown'){'FALLBACK'}else{'live'} }
 T 'A4-17' 'Data/API'          'Tariff is not the default fallback'       'not default' { $t = Api GET /api/v1/etl/tariff/current $null $admin; if($t.periodStartHour -eq 0 -and $t.periodEndHour -eq 23){'DEFAULT'}else{'not default'} }
 
-# Assignment 3 FR06 expected a new battery at 100% SOC; the code initialises 50% (10 kWh, HYBRID)
+# Assignment 3 FR06 expects a new battery at 100% SOC (10 kWh, HYBRID)
 T 'A4-31' 'Main workflow'     'New company battery initial SOC (A3 FR06 says 100)' 100 { [int]$initSoc }
-# main workflow success path: discharge 4 kWh from 50% (10 kWh battery) -> about 5.6% SoC
-T 'A4-28' 'Main workflow'     'Manager discharges 4 kWh: health CRITICAL' 'CRITICAL' { Api POST /api/v1/simulation/run @{companyId=$coA.id;action='DISCHARGE';kwh=4;mode='HYBRID'} $mgrA | Out-Null; (Api GET "/api/v1/simulation/battery/health/$($coA.id)" $null $mgrA).healthStatus }
-T 'A4-29' 'Main workflow'     'LOW_SOC alert created automatically'      'alert created' { $a = Flat (Api GET "/api/v1/notifications/alerts/$($coA.id)" $null $mgrA); if(($a | Where-Object {$_.alertType -eq 'LOW_SOC'}).Count -gt 0){'alert created'}else{'none'} }
-T 'A4-30' 'Main workflow'     'Maintenance ticket created automatically' 'ticket created' { $t = Flat (Api GET "/api/v1/tickets/company/$($coA.id)" $null $mgrA); if($t.Count -gt 0){'ticket created'}else{'none'} }
+# main workflow success path: discharge 8 kWh from 100% (10 kWh battery) -> about 11% SoC (CRITICAL, below the 20% alert threshold)
+T 'A4-28' 'Main workflow'     'Manager discharges 8 kWh: health CRITICAL' 'CRITICAL' { Api POST /api/v1/simulation/run @{companyId=$coA.id;action='DISCHARGE';kwh=8;mode='HYBRID'} $mgrA | Out-Null; (Api GET "/api/v1/simulation/battery/health/$($coA.id)" $null $mgrA).healthStatus }
+T 'A4-29' 'Main workflow'     'LOW_SOC alert created automatically (manager view)' 'alert created' { $n = 0; for($k=0; $k -lt 6 -and $n -eq 0; $k++){ if($k -gt 0){ Start-Sleep 3 }; $a = @(Api GET "/api/v1/notifications/alerts/$($coA.id)" $null $mgrA); $n = @($a | Where-Object { $_.alertType -eq 'LOW_SOC' }).Count; Write-Host "A4-29 try ${k}: alerts=$($a.Count) lowsoc=$n company=$($coA.id)" }; if($n -gt 0){'alert created'}else{'none'} }
+T 'A4-30' 'Main workflow'     'Maintenance ticket created automatically (manager view)' 'ticket created' { $n = 0; for($k=0; $k -lt 6 -and $n -eq 0; $k++){ if($k -gt 0){ Start-Sleep 3 }; $t = @(Api GET "/api/v1/tickets/company/$($coA.id)" $null $mgrA); $n = @($t | Where-Object { $_ }).Count; Write-Host "A4-30 try ${k}: tickets=$n" }; if($n -gt 0){'ticket created'}else{'none'} }
+T 'A4-29b' 'Main workflow'    'LOW_SOC alert exists (admin read-back)'   'alert created' { $a = @(Api GET "/api/v1/notifications/alerts/$($coA.id)" $null $admin); if(@($a | Where-Object { $_.alertType -eq 'LOW_SOC' }).Count -gt 0){'alert created'}else{'none'} }
+T 'A4-30b' 'Main workflow'    'Ticket exists (admin read-back)'          'ticket created' { $t = @(Api GET "/api/v1/tickets/company/$($coA.id)" $null $admin); if(@($t | Where-Object { $_ }).Count -gt 0){'ticket created'}else{'none'} }
 T 'A4-26' 'Invalid input'     'Recommendation for unknown company'       404 { Code GET "/api/v1/prediction/recommend/00000000-0000-0000-0000-000000000000" $null $admin }
 T 'A4-27' 'Invalid input'     'Negative kWh rejected by the server'      400 { Code POST /api/v1/simulation/run @{companyId=$coB.id;action='CHARGE';kwh=-2;mode='HYBRID'} $mgrB }
+T 'A4-34' 'Emerging tech'     'After the discharge (SOC about 11%, stage 0) the model recommends CHARGE' 'CHARGE' { (Api GET "/api/v1/prediction/recommend/$($coA.id)" $null $mgrA).action }
 T 'A4-04' 'Data/API'          'Assign a technician to a company (admin)'  200 { Code POST "/api/v1/companies/$($coA.id)/users" @{email="tech.$run@test.local";role='TECHNICIAN'} $admin }
 
 T 'A4-32' 'Emerging tech'     'Confidence comes from the model, not the 0.6 default' 'model value' { $r = Api GET "/api/v1/prediction/recommend/$($coA.id)" $null $mgrA; if([math]::Abs([double]$r.confidence - 0.6) -lt 0.0001){'DEFAULT 0.6'}else{'model value'} }

@@ -115,7 +115,7 @@ public class AuthService {
     public void updateUserCompany(String email, String companyId) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found: " + email));
-        user.setCompanyId(companyId);
+        user.setCompanyId((companyId == null || companyId.isBlank()) ? null : companyId);
         userRepository.save(user);
     }
 }

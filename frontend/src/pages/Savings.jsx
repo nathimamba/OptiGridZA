@@ -7,25 +7,35 @@ import { apiFetch } from '../services/api'
 ChartJS.register(BarElement, LinearScale, CategoryScale, Tooltip)
 
 export default function Savings() {
-  const { activeCompanyId: companyId } = useCompanyScope()
+  const { activeCompanyId: companyId, isAdmin } = useCompanyScope()
   const [recommendation, setRecommendation] = useState(null)
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    if (!companyId) return
+    if (!companyId) return undefined
+    let active = true
+    setLoading(true)
+    setError('')
     apiFetch(`/api/v1/prediction/recommend/${companyId}`)
-      .then(setRecommendation)
-      .catch(() => setError('Could not load savings data.'))
+      .then(data => { if (active) setRecommendation(data) })
+      .catch(err => { if (active) { setRecommendation(null); setError(`Could not load savings data: ${err.message}`) } })
+      .finally(() => { if (active) setLoading(false) })
+    return () => { active = false }
   }, [companyId])
 
-  const daily = recommendation?.estimatedSavingsRand || 0
+  const daily = recommendation?.estimatedSavingsRand ?? 0
   const projected30 = daily * 30
+  const action = recommendation?.action
+  const noSaving = recommendation && daily <= 0
 
+  
+  const baseline = projected30 > 0 ? projected30 * 2.5 : 0
   const chartData = {
     labels: ['No optimisation', 'With OptiGrid ZA'],
     datasets: [{
       label: 'Estimated monthly cost (R)',
-      data: [projected30 * 2.5, projected30 * 2.5 - projected30],
+      data: [baseline, Math.max(0, baseline - projected30)],
       backgroundColor: ['#C0341B', '#1E7A6B'],
       borderRadius: 8,
     }],
@@ -36,7 +46,15 @@ export default function Savings() {
       <h1 className="font-display text-2xl font-bold mb-1">Savings Projection</h1>
       <p className="text-sm text-base-content/60 mb-6">Based on today's recommendation, extrapolated over 30 days</p>
 
+      {!companyId && (
+        <div className="alert alert-info mb-6">
+          {isAdmin
+            ? 'No company selected. Create a company first, then choose it under "Viewing company".'
+            : 'No company is linked to your account. Ask an administrator to assign you to a company.'}
+        </div>
+      )}
       {error && <div className="alert alert-error mb-6">{error}</div>}
+      {loading && <div className="mb-6"><span className="loading loading-spinner loading-md" /> Loading savings…</div>}
 
       <div className="grid md:grid-cols-3 gap-6 mb-6">
         <div className="stat bg-base-100 rounded-box shadow border border-base-300">
@@ -49,9 +67,24 @@ export default function Savings() {
         </div>
         <div className="stat bg-base-100 rounded-box shadow border border-base-300">
           <div className="stat-title">Current action</div>
-          <div className="stat-value text-lg">{recommendation?.action ?? '—'}</div>
+          <div className="stat-value text-lg">{action ?? '—'}</div>
+          {recommendation && (
+            <div className="stat-desc">
+              Battery {Number(recommendation.currentSoc ?? 0).toFixed(0)}% · stage {recommendation.loadSheddingStage ?? 0}
+            </div>
+          )}
         </div>
       </div>
+
+      {noSaving && (
+        <div className="alert mb-6">
+          <span>
+            No saving is projected right now: the recommendation is <b>{action}</b>, and savings are only
+            estimated for actions that avoid peak-tariff or outage cost (for example DISCHARGE during
+            load-shedding). {recommendation.reasoning}
+          </span>
+        </div>
+      )}
 
       <div className="card bg-base-100 shadow border border-base-300">
         <div className="card-body">

@@ -35,9 +35,20 @@ public class OnnxModelService {
             }
             modelLoaded = true;
             log.info("ONNX model loaded successfully — {} classes configured.", CLASS_LABELS.length);
+            warmUp();
         } catch (Exception e) {
             modelLoaded = false;
             log.error("Failed to load ONNX model — will fall back to safe HOLD per NFR-03: {}", e.getMessage());
+        }
+    }
+
+    /** One throw-away inference at start-up so the first real request does not pay the JIT/session cost. */
+    private void warmUp() {
+        try {
+            predict(new float[] {0f, 0f, 1.5f, 3f, 50f, 3.5f, 0f});
+            predict(new float[] {5f, 0.1f, 1.5f, 3f, 50f, 3.5f, 0f});
+        } catch (Exception e) {
+            log.warn("ONNX warm-up skipped: {}", e.getMessage());
         }
     }
 

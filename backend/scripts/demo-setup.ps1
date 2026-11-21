@@ -18,6 +18,26 @@ function Flat($x){ $o = @(); foreach($i in @($x)){ $o += $i }; $o }   # same res
 function Status($e){ if($e.Exception.Response){ [int]$e.Exception.Response.StatusCode } else { 0 } }
 
 $admin = New-S
+
+# Bootstrapping: Try to register the admin account first in case the database is completely empty
+try {
+    Api POST /api/v1/auth/register @{
+        firstName = 'System'
+        lastName  = 'Administrator'
+        email     = $AdminEmail
+        password  = $AdminPassword
+        role      = 'SYSTEM_ADMIN'
+    } $null | Out-Null
+    Write-Host "Admin account initialized successfully." -ForegroundColor Green
+} catch {
+    if ((Status $_) -eq 409) {
+        Write-Host "Admin account already exists, skipping initialization step." -ForegroundColor Yellow
+    } else {
+        Write-Host "Admin auto-registration skipped: $($_.Exception.Message)" -ForegroundColor Yellow
+    }
+}
+
+# Now safely log in using the administrator credentials
 Api POST /api/v1/auth/login @{email=$AdminEmail;password=$AdminPassword} $admin | Out-Null
 
 function Ensure-Company($name,$address,$lat,$lon,$mail){
