@@ -1,0 +1,95 @@
+﻿**********************
+Windows PowerShell transcript start
+Start time: 20261031185431
+Username: NKOSINATHI\nathi
+RunAs User: NKOSINATHI\nathi
+Configuration Name: 
+Machine: NKOSINATHI (Microsoft Windows NT 10.0.26300.0)
+Host Application: C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe
+Process ID: 10564
+PSVersion: 5.1.26100.9711
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.26100.9711
+BuildVersion: 10.0.26100.9711
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+PS C:\Users\nathi\OneDrive\Desktop\OptiGridZA> TerminatingError(Invoke-RestMethod): "The remote server returned an error: (403) Forbidden."
+>> TerminatingError(Invoke-RestMethod): "The remote server returned an error: (403) Forbidden."
+PS C:\Users\nathi\OneDrive\Desktop\OptiGridZA> TerminatingError(Invoke-RestMethod): "The remote server returned an error: (401) Unauthorized."
+>> TerminatingError(Invoke-RestMethod): "The remote server returned an error: (401) Unauthorized."
+PS C:\Users\nathi\OneDrive\Desktop\OptiGridZA> TerminatingError(Invoke-RestMethod): "The remote server returned an error: (403) Forbidden."
+>> TerminatingError(Invoke-RestMethod): "The remote server returned an error: (403) Forbidden."
+PS C:\Users\nathi\OneDrive\Desktop\OptiGridZA> TerminatingError(Invoke-RestMethod): "The remote server returned an error: (403) Forbidden."
+>> TerminatingError(Invoke-RestMethod): "The remote server returned an error: (403) Forbidden."
+PS C:\Users\nathi\OneDrive\Desktop\OptiGridZA> TerminatingError(Invoke-RestMethod): "The remote server returned an error: (403) Forbidden."
+>> TerminatingError(Invoke-RestMethod): "The remote server returned an error: (403) Forbidden."
+PS C:\Users\nathi\OneDrive\Desktop\OptiGridZA> TerminatingError(Invoke-RestMethod): "The remote server returned an error: (403) Forbidden."
+>> TerminatingError(Invoke-RestMethod): "The remote server returned an error: (403) Forbidden."
+PS C:\Users\nathi\OneDrive\Desktop\OptiGridZA> TerminatingError(Invoke-RestMethod): "The remote server returned an error: (403) Forbidden."
+>> TerminatingError(Invoke-RestMethod): "The remote server returned an error: (403) Forbidden."
+PS C:\Users\nathi\OneDrive\Desktop\OptiGridZA> TerminatingError(Invoke-RestMethod): "The remote server returned an error: (403) Forbidden."
+>> TerminatingError(Invoke-RestMethod): "The remote server returned an error: (403) Forbidden."
+PS C:\Users\nathi\OneDrive\Desktop\OptiGridZA> TerminatingError(Invoke-RestMethod): "The remote server returned an error: (400) Bad Request."
+>> TerminatingError(Invoke-RestMethod): "The remote server returned an error: (400) Bad Request."
+PS C:\Users\nathi\OneDrive\Desktop\OptiGridZA> TerminatingError(Invoke-WebRequest): "{"timestamp":"2026-10-31T16:57:30.103Z","path":"/actuator/health","status":404,"error":"Not Found","requestId":"017b0355-82"}"
+PS C:\Users\nathi\OneDrive\Desktop\OptiGridZA> TerminatingError(Invoke-WebRequest): "The remote server returned an error: (403) Forbidden."
+PS C:\Users\nathi\OneDrive\Desktop\OptiGridZA> TerminatingError(Invoke-WebRequest): "The remote server returned an error: (500) Internal Server Error."
+PS C:\Users\nathi\OneDrive\Desktop\OptiGridZA> TerminatingError(Invoke-WebRequest): "The remote server returned an error: (500) Internal Server Error."
+PS C:\Users\nathi\OneDrive\Desktop\OptiGridZA> TerminatingError(Invoke-WebRequest): "The remote server returned an error: (403) Forbidden."
+PS C:\Users\nathi\OneDrive\Desktop\OptiGridZA> TerminatingError(Invoke-WebRequest): "The remote server returned an error: (403) Forbidden."
+PS C:\Users\nathi\OneDrive\Desktop\OptiGridZA> TerminatingError(Invoke-WebRequest): "The operation has timed out."
+
+ID    Category         Test
+--    --------         ----
+A4-01 Main workflow    Admin login
+A4-21 Invalid input    Wrong password
+A4-22 Access control   Protected endpoint without session
+A4-06 Invalid input    Anonymous register asking SYSTEM_ADMIN
+A4-24 Invalid input    Register with invalid email
+A4-25 Invalid input    Register duplicate email
+A4-07 Access control   Viewer runs simulation
+A4-11 Tenant isolation Manager A reads own battery health
+A4-12 Tenant isolation Manager A reads Company B battery health
+A4-13 Tenant isolation Manager A runs simulation on Company B
+A4-14 Tenant isolation Manager A reads Company B alerts
+A4-08 Emerging tech    model-info reports modelLoaded
+A4-09 Emerging tech    Recommendation returns a valid action
+A4-18 Data/API         Set demo load-shedding stage 4
+A4-19 Emerging tech    Recommendation at stage 4: mode
+A4-23 Invalid input    Demo stage 99 is clamped
+A4-20 Data/API         Reset demo stage to 0
+A4-16 Data/API         Weather is live (not the fallback)
+A4-17 Data/API         Tariff is not the default fallback
+A4-31 Main workflow    New company battery initial SOC (A3 FR06 says
+                       100)
+A4-28 Main workflow    Manager discharges 4 kWh: health CRITICAL
+A4-29 Main workflow    LOW_SOC alert created automatically
+A4-30 Main workflow    Maintenance ticket created automatically
+A4-26 Invalid input    Recommendation for unknown company
+A4-27 Invalid input    Negative kWh rejected by the server
+A4-04 Data/API         Assign a technician to a company (admin)
+A4-32 Emerging tech    Confidence comes from the model, not the 0.6
+                       default
+A4-33 Data/API         Manual ETL fetch gives a fresh timestamp (A3
+                       TC-04)
+A4-41 Supportability   /actuator/health on gateway (:8080)
+A4-42 Supportability   /actuator/health on auth (:8081)
+A4-43 Supportability   /actuator/health on company (:8082)
+A4-44 Supportability   /actuator/health on etl (:8083)
+A4-45 Supportability   /actuator/health on prediction (:8084)
+A4-46 Supportability   /actuator/health on simulation (:8085)
+A4-47 Supportability   /actuator/health on notification (:8086)
+A4-48 Supportability   /actuator/health on eureka (:8761)
+
+
+
+PASS 19 of 36; CHECK 17 (open each CHECK row: a different code can still be correct behaviour, or it is a finding)
+Login: 535 ms | Recommendation cold: 2243 ms | warm avg: 276 ms | p95: 457 ms (100 calls) | battery health avg: 40 ms
+ONNX inference: n=105, median 435 us, p95 10688 us, max 658775 us (target 50000 us)
+**********************
+Windows PowerShell transcript end
+End time: 20261031185828
+**********************
